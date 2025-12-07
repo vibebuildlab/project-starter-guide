@@ -1,0 +1,136 @@
+# Daily Deploy Check Workflow
+# Copy this to .github/workflows/daily-deploy-check.yml in each project
+#
+# Required secrets:
+#   AUDIT_WEBHOOK_SECRET - shared secret for authenticating with vibebuildlab API
+#
+# Required variables (set in repo settings):
+#   PRODUCTION_URL - the production URL to check (e.g., https://saas.vibebuildlab.com)
+#
+# This workflow:
+# 1. Runs daily at 6am UTC
+# 2. Checks if production URL responds and SSL is valid
+# 3. Reports deploy stage status to vibebuildlab dashboard
+
+name: Daily Deploy Check
+
+on:
+  schedule:
+    # Every day at 6am UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Manual trigger
+
+env:
+  VIBEBUILDLAB_API: https://dash.vibebuildlab.com/api/audit-results
+
+jobs:
+  deploy-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check URL responds
+        id: url_check
+        run: |
+          URL="${{ vars.PRODUCTION_URL }}"
+
+          if [ -z "$URL" ]; then
+            echo "::error::PRODUCTION_URL variable not set"
+            echo "responds=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30 || echo "000")
+
+          echo "status_code=$STATUS" >> $GITHUB_OUTPUT
+
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "responds=true" >> $GITHUB_OUTPUT
+          else
+            echo "responds=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Check SSL certificate
+        id: ssl_check
+        run: |
+          URL="${{ vars.PRODUCTION_URL }}"
+
+          if [ -z "$URL" ]; then
+            echo "valid=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Extract domain from URL
+          DOMAIN=$(echo "$URL" | sed -E 's|https?://([^/]+).*|\1|')
+
+          # Check SSL expiry
+          EXPIRY=$(echo | openssl s_client -servername "$DOMAIN" -connect "$DOMAIN:443" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2 || echo "")
+
+          if [ -n "$EXPIRY" ]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+            echo "expiry=$EXPIRY" >> $GITHUB_OUTPUT
+
+            # Check if expiring within 7 days
+            EXPIRY_EPOCH=$(date -d "$EXPIRY" +%s 2>/dev/null || date -j -f "%b %d %H:%M:%S %Y %Z" "$EXPIRY" +%s 2>/dev/null || echo "0")
+            NOW_EPOCH=$(date +%s)
+            DAYS_LEFT=$(( (EXPIRY_EPOCH - NOW_EPOCH) / 86400 ))
+
+            echo "days_left=$DAYS_LEFT" >> $GITHUB_OUTPUT
+
+            if [ "$DAYS_LEFT" -lt 7 ]; then
+              echo "::warning::SSL certificate expires in $DAYS_LEFT days!"
+            fi
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Determine deploy status
+        id: result
+        run: |
+          if [ "${{ steps.url_check.outputs.responds }}" = "true" ]; then
+            echo "deploy=pass" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report to vibebuildlab
+        if: always()
+        run: |
+          # Get project slug from repo name
+          PROJECT_SLUG="${{ github.event.repository.name }}"
+
+          curl -X POST "$VIBEBUILDLAB_API" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.AUDIT_WEBHOOK_SECRET }}" \
+            -d "{
+              \"project\": \"${PROJECT_SLUG}\",
+              \"stages\": {
+                \"deploy\": \"${{ steps.result.outputs.deploy }}\"
+              },
+              \"details\": {
+                \"url_responds\": ${{ steps.url_check.outputs.responds }},
+                \"ssl_valid\": ${{ steps.ssl_check.outputs.valid || false }},
+                \"status_code\": ${{ steps.url_check.outputs.status_code || 0 }}
+              },
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }"
+        continue-on-error: true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Deploy Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ vars.PRODUCTION_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| URL Responds | ${{ steps.url_check.outputs.responds == 'true' && '✅' || '❌' }} (HTTP ${{ steps.url_check.outputs.status_code }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| SSL Valid | ${{ steps.ssl_check.outputs.valid == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.ssl_check.outputs.expiry }}" ]; then
+            echo "| SSL Expiry | ${{ steps.ssl_check.outputs.expiry }} (${{ steps.ssl_check.outputs.days_left }} days) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy Stage:** ${{ steps.result.outputs.deploy }}" >> $GITHUB_STEP_SUMMARY

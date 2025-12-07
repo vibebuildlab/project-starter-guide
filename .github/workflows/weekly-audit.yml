@@ -1,0 +1,173 @@
+# Weekly Audit Workflow
+# Copy this to .github/workflows/weekly-audit.yml in each project
+#
+# Required secrets:
+#   AUDIT_WEBHOOK_SECRET - shared secret for authenticating with vibebuildlab API
+#
+# This workflow:
+# 1. Runs weekly (Sunday 2am UTC) and on manual trigger
+# 2. Checks build, tests, lint, typecheck, security
+# 3. Reports results to vibebuildlab dashboard
+
+name: Weekly Audit
+
+on:
+  schedule:
+    # Every Sunday at 2am UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch: # Manual trigger
+
+env:
+  VIBEBUILDLAB_API: https://dash.vibebuildlab.com/api/audit-results
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        id: build
+        run: |
+          if npm run build; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Run tests
+        id: tests
+        run: |
+          # Run tests and capture output
+          TEST_OUTPUT=$(npm test 2>&1) || true
+          echo "$TEST_OUTPUT"
+
+          # Parse results
+          PASSED=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ passed' | tail -1 | awk '{print $1}' || echo "0")
+          FAILED=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ failed' | tail -1 | awk '{print $1}' || echo "0")
+
+          echo "passed=${PASSED:-0}" >> $GITHUB_OUTPUT
+          echo "failed=${FAILED:-0}" >> $GITHUB_OUTPUT
+
+          if [ "${FAILED:-0}" = "0" ] && [ "${PASSED:-0}" != "0" ]; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Run lint
+        id: lint
+        run: |
+          LINT_OUTPUT=$(npm run lint 2>&1) || true
+          ERRORS=$(echo "$LINT_OUTPUT" | grep -cE '^\s+[0-9]+:[0-9]+\s+error' || echo "0")
+          echo "errors=${ERRORS:-0}" >> $GITHUB_OUTPUT
+
+          if [ "${ERRORS:-0}" = "0" ]; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Run typecheck
+        id: typecheck
+        run: |
+          if npm run typecheck 2>/dev/null || npx tsc --noEmit 2>/dev/null; then
+            echo "success=true" >> $GITHUB_OUTPUT
+            echo "errors=0" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "errors=1" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Security audit
+        id: security
+        run: |
+          AUDIT_OUTPUT=$(npm audit 2>&1) || true
+
+          if echo "$AUDIT_OUTPUT" | grep -qiE '[0-9]+ (high|critical)'; then
+            echo "vulnerabilities=1" >> $GITHUB_OUTPUT
+            echo "success=false" >> $GITHUB_OUTPUT
+          else
+            echo "vulnerabilities=0" >> $GITHUB_OUTPUT
+            echo "success=true" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Determine audit result
+        id: result
+        run: |
+          # execute stage: build must pass
+          if [ "${{ steps.build.outputs.success }}" = "true" ]; then
+            echo "execute=pass" >> $GITHUB_OUTPUT
+          else
+            echo "execute=fail" >> $GITHUB_OUTPUT
+          fi
+
+          # audit stage: tests + lint + typecheck + security
+          if [ "${{ steps.tests.outputs.success }}" = "true" ] && \
+             [ "${{ steps.lint.outputs.success }}" = "true" ] && \
+             [ "${{ steps.typecheck.outputs.success }}" = "true" ] && \
+             [ "${{ steps.security.outputs.success }}" = "true" ]; then
+            echo "audit=pass" >> $GITHUB_OUTPUT
+          else
+            echo "audit=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report to vibebuildlab
+        if: always()
+        run: |
+          # Get project slug from package.json name or repo name
+          PROJECT_SLUG=$(node -e "console.log(require('./package.json').name)" 2>/dev/null || echo "${{ github.event.repository.name }}")
+
+          curl -X POST "$VIBEBUILDLAB_API" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.AUDIT_WEBHOOK_SECRET }}" \
+            -d "{
+              \"project\": \"${PROJECT_SLUG}\",
+              \"stages\": {
+                \"execute\": \"${{ steps.result.outputs.execute }}\",
+                \"audit\": \"${{ steps.result.outputs.audit }}\"
+              },
+              \"details\": {
+                \"tests_passed\": ${{ steps.tests.outputs.passed || 0 }},
+                \"tests_failed\": ${{ steps.tests.outputs.failed || 0 }},
+                \"lint_errors\": ${{ steps.lint.outputs.errors || 0 }},
+                \"type_errors\": ${{ steps.typecheck.outputs.errors || 0 }},
+                \"vulnerabilities\": ${{ steps.security.outputs.vulnerabilities || 0 }},
+                \"build_success\": ${{ steps.build.outputs.success }}
+              },
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }"
+        continue-on-error: true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ steps.build.outputs.success == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ steps.tests.outputs.success == 'true' && '✅' || '❌' }} (${{ steps.tests.outputs.passed }} passed, ${{ steps.tests.outputs.failed }} failed) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ steps.lint.outputs.success == 'true' && '✅' || '❌' }} (${{ steps.lint.outputs.errors }} errors) |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | ${{ steps.typecheck.outputs.success == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ steps.security.outputs.success == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Execute Stage:** ${{ steps.result.outputs.execute }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Audit Stage:** ${{ steps.result.outputs.audit }}" >> $GITHUB_STEP_SUMMARY
