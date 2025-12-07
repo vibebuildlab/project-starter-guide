@@ -21,6 +21,10 @@ export default defineConfig({
         branches: 85,
       },
     },
+    alias: {
+      // React 19 compatibility: redirect deprecated react-dom/test-utils to our shim
+      'react-dom/test-utils': resolve(__dirname, 'test-utils-shim.ts'),
+    },
   },
   esbuild: {
     jsx: 'automatic',

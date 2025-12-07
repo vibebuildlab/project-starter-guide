@@ -208,27 +208,20 @@ fi
 # Run comprehensive validation (lint/type-check/build) with production env
 export NODE_ENV="production"
 
-# Use validate:all if available (covers lint, type-check, build, and security)
-if has_script "validate:all"; then
-  echo "🔍 Running comprehensive validation (validate:all)"
-  HUSKY=0 npm run validate:all
-  # validate:all includes security audit, so skip separate security check
-  SKIP_SECURITY_AUDIT=true
-else
-  # Fallback to individual commands
-  run_if_script_exists lint "npm run lint"
-  run_if_script_exists "type-check" "npm run type-check"
-  run_if_script_exists build "npm run build"
-  SKIP_SECURITY_AUDIT=false
-fi
+# Run lint and type-check first (these work in production mode)
+run_if_script_exists lint "npm run lint"
+run_if_script_exists "type-check" "npm run type-check"
+run_if_script_exists build "npm run build"
 
-# Run tests with test env (tests don't run in production mode)
+# Run tests with test env (React 19's testing library requires NODE_ENV=test)
 export NODE_ENV="test"
 if [ "$TEMPLATE_PATH" = "saas-level-1" ]; then
   run_if_script_exists test "npm test"
 else
   run_if_script_exists test "npm test -- --runInBand"
 fi
+
+SKIP_SECURITY_AUDIT=false
 
 # Run security audit only if not already included in validate:all
 if [ "$SKIP_SECURITY_AUDIT" = false ]; then

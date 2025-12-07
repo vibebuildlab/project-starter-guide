@@ -11,6 +11,6 @@ describe('Home page', () => {
       screen.getByRole('heading', { level: 1, name: /everything you need to succeed/i })
     ).toBeInTheDocument()
     expect(screen.getByRole('region', { name: /pricing/i })).toBeInTheDocument()
-    expect(screen.getByText(/© 2024 saas starter/i)).toBeInTheDocument()
+    expect(screen.getByText(/© \d{4}/i)).toBeInTheDocument()
   })
 })

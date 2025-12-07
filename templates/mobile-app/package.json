@@ -58,7 +58,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@testing-library/dom": "^9.3.4",
-    "@testing-library/react-native": "^13.3.3",
+    "@testing-library/react-native": "^14.0.0-alpha.1",
     "@types/jest": "^29.5.12",
     "@types/react": "^19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.9.0",
@@ -121,10 +121,14 @@
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
-      "@testing-library/react-native/build/matchers"
+      "./jest.setup.js",
+      "@testing-library/react-native/matchers"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native|@react-navigation|@react-native-community|expo(nent)?|@expo|expo-status-bar|@expo/vector-icons|expo-constants|expo-linking|expo-font|expo-splash-screen|react-native-gesture-handler|react-native-reanimated|react-native-safe-area-context|react-native-screens|expo-modules-core)/)"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^react-test-renderer$": "<rootDir>/test-renderer-shim.js"
+    }
   }
 }

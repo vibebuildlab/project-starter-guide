@@ -1,11 +1,59 @@
 {
-  "audit_date": "2025-11-22",
+  "audit_date": "2025-12-07",
   "template_version": "1.0.0",
   "waivers": {
     "dev_only_vulnerabilities": {
       "rationale": "These vulnerabilities are in development dependencies only and do not affect production builds or runtime security",
-      "audit_command": "npm audit --json (run 2025-11-23)",
+      "audit_command": "npm audit --json (run 2025-12-07)",
       "vulnerabilities": [
+        {
+          "package": "@vitest/coverage-v8",
+          "severity": "low",
+          "source": "Direct development dependency",
+          "description": "Vitest coverage tool with transitive vulnerabilities in esbuild",
+          "impact": "Development tool only - test coverage reporting",
+          "mitigation": "Not applicable to production builds"
+        },
+        {
+          "package": "@vitest/mocker",
+          "severity": "low",
+          "source": "vitest -> @vitest/mocker",
+          "description": "Vitest mocking utilities",
+          "impact": "Development tool only - test mocking",
+          "mitigation": "Not applicable to production builds"
+        },
+        {
+          "package": "esbuild",
+          "severity": "low",
+          "source": "vitest -> esbuild",
+          "description": "JavaScript bundler used by Vitest",
+          "impact": "Development tool only - test bundling",
+          "mitigation": "Not applicable to production builds"
+        },
+        {
+          "package": "vite",
+          "severity": "low",
+          "source": "vitest -> vite",
+          "description": "Build tool used by Vitest",
+          "impact": "Development tool only - test runner",
+          "mitigation": "Not applicable to production builds"
+        },
+        {
+          "package": "vite-node",
+          "severity": "low",
+          "source": "vitest -> vite-node",
+          "description": "Vite Node.js runtime for Vitest",
+          "impact": "Development tool only - test execution",
+          "mitigation": "Not applicable to production builds"
+        },
+        {
+          "package": "vitest",
+          "severity": "low",
+          "source": "Direct development dependency",
+          "description": "Test framework",
+          "impact": "Development tool only - test runner",
+          "mitigation": "Not applicable to production builds"
+        },
         {
           "package": "@lhci/cli",
           "severity": "low",

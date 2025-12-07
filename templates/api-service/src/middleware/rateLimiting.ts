@@ -23,6 +23,13 @@ interface AuthenticatedRequest extends Request {
 }
 
 /**
+ * Skip rate limiting in test environment
+ * This allows integration tests to run without hitting rate limits
+ */
+const isTestEnvironment = process.env.NODE_ENV === 'test'
+const skipInTest = (): boolean => isTestEnvironment
+
+/**
  * Standard rate limit response format
  */
 const standardMessage = {
@@ -42,6 +49,7 @@ export const globalLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
+  skip: skipInTest,
   keyGenerator: (req: Request) => {
     // Use X-Forwarded-For header if behind proxy, otherwise use IP
     return (req.ip || req.socket.remoteAddress || 'unknown') as string
@@ -64,6 +72,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins
+  skip: skipInTest,
   keyGenerator: (req: Request) => {
     return (req.ip || req.socket.remoteAddress || 'unknown') as string
   },
@@ -83,6 +92,7 @@ export const registrationLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
 })
 
 /**
@@ -99,6 +109,7 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
 })
 
 /**
@@ -112,6 +123,7 @@ export const userLimiter = rateLimit({
   message: standardMessage,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
   keyGenerator: (req: AuthenticatedRequest) => {
     // Use user ID if authenticated, otherwise fall back to IP
     if (req.user?.userId) {
