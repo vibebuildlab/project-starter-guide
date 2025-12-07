@@ -1,5 +1,10 @@
 # Project Starter Guide
 
+[![Template Smoke Tests](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/template-smoke-tests.yml/badge.svg)](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/template-smoke-tests.yml)
+[![Code Quality](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/code-quality-review.yml/badge.svg)](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/code-quality-review.yml)
+[![Dependency Audit](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/dependency-audit.yml/badge.svg)](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/dependency-audit.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Comprehensive guide for choosing the right architecture and technology stack for any project type. A decision matrix and technical reference for developers starting new projects.
 
 ---
@@ -160,6 +165,14 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 ## License
 
 This project is MIT licensed. See [LICENSE](LICENSE) for full details.
+
+## Support
+
+Need help? See [SUPPORT.md](SUPPORT.md) for:
+- Documentation links
+- Community resources
+- Commercial support options
+- Security vulnerability reporting
 
 ## Legal
 

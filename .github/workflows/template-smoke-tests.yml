@@ -110,6 +110,29 @@ jobs:
           else
             npm test
           fi
+      - name: Check coverage thresholds
+        if: matrix.template == 'saas-level-1' || matrix.template == 'api-service'
+        working-directory: templates/${{ matrix.template }}
+        run: |
+          echo "📊 Checking coverage thresholds..."
+          if [ -f "coverage/coverage-summary.json" ]; then
+            LINES=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            BRANCHES=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+            echo "Lines: $LINES%, Branches: $BRANCHES%"
+
+            # Thresholds: 80% lines, 75% branches (from TESTING.md)
+            if (( $(echo "$LINES < 80" | bc -l) )); then
+              echo "❌ Line coverage ($LINES%) below threshold (80%)"
+              exit 1
+            fi
+            if (( $(echo "$BRANCHES < 75" | bc -l) )); then
+              echo "❌ Branch coverage ($BRANCHES%) below threshold (75%)"
+              exit 1
+            fi
+            echo "✅ Coverage thresholds met"
+          else
+            echo "⚠️ No coverage report found, skipping threshold check"
+          fi
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
