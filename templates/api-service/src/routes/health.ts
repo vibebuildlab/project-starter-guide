@@ -1,8 +1,7 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // GET /health - Basic health check endpoint (liveness probe)
 router.get("/", (req, res) => {

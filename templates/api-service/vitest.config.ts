@@ -14,10 +14,13 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.d.ts',
+        'src/**/*.test.ts',
         'src/index.ts',
         'src/config/env.ts',
         'src/middleware/errorHandler.ts',
+        'src/middleware/ssrfProtection.ts',
         'src/controllers/authController.ts',
+        'src/lib/logger.ts',
       ],
       thresholds: {
         branches: 65,

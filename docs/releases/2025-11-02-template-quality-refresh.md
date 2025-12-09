@@ -28,5 +28,11 @@ These notes capture the quality and security updates applied across all starter 
 
 ## Next Steps
 
-- Mirror these updates into live repositories and open verification pull requests before tagging the Templates Q4 2025 release.
+- ~~Mirror these updates into live repositories and open verification pull requests before tagging the Templates Q4 2025 release.~~ ✅ Completed 2025-12-08
 - Monitor npm audit output in the next runs; follow `docs/security-guide.md` for handling high-severity findings.
+
+## Completion Notes (2025-12-08)
+
+- Template versions aligned to v2.2.0 across all package.json files
+- Next.js updated to ^16.0.7 (CVE-2025-55182 security patch)
+- All templates verified against CHANGELOG v2.2.0 release notes

@@ -7,10 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // For testing, you can switch to SQLite:
-  // provider = "sqlite"
-  // url      = "file:./dev.db"
 }
 
 model User {

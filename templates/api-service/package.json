@@ -1,6 +1,6 @@
 {
   "name": "api-service-starter",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "description": "A production-ready REST API starter with Express.js, TypeScript, and PostgreSQL",
   "main": "dist/index.js",
   "scripts": {
@@ -32,10 +32,13 @@
     "lighthouse:upload": "lhci upload",
     "validate:all": "npm run quality:check && npm run security:audit",
     "prepare": "husky",
+    "postinstall": "npm run prisma:generate",
+    "prisma:generate": "node scripts/prisma-generate.mjs",
     "perf:smoke": "bash scripts/perf-smoke.sh"
   },
   "dependencies": {
-    "@prisma/client": "^5.6.0",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.0",
@@ -46,8 +49,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "pg": "^8.11.0",
-    "prisma": "^5.6.0",
-    "zod": "^3.22.0"
+    "prisma": "^7.1.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@lhci/cli": "^0.14.0",
@@ -61,7 +64,7 @@
     "@types/supertest": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^6.9.0",
     "@typescript-eslint/parser": "^6.9.0",
-    "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/coverage-v8": "^4.0.15",
     "autocannon": "^7.14.1",
     "eslint": "^8.52.0",
     "eslint-plugin-security": "^3.0.1",
@@ -76,7 +79,7 @@
     "supertest": "^6.3.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.2.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.0.15"
   },
   "keywords": [
     "api",

@@ -27,15 +27,34 @@ interface AuthenticatedRequest extends Request {
  * This allows integration tests to run without hitting rate limits
  */
 const isTestEnvironment = process.env.NODE_ENV === 'test'
-const skipInTest = (): boolean => isTestEnvironment
+export const skipInTest = (): boolean => isTestEnvironment
 
 /**
  * Standard rate limit response format
  */
-const standardMessage = {
+export const standardMessage = {
   error: 'Too many requests',
   message: 'You have exceeded the rate limit. Please try again later.',
   retryAfter: 'See Retry-After header for wait time in seconds',
+}
+
+/**
+ * Extract client IP from request
+ * Used by rate limiters as key generator
+ */
+export function getClientIP(req: Request): string {
+  return (req.ip || req.socket.remoteAddress || 'unknown') as string
+}
+
+/**
+ * Extract user ID or fall back to IP
+ * Used by user-based rate limiter
+ */
+export function getUserKey(req: AuthenticatedRequest): string {
+  if (req.user?.userId) {
+    return `user:${req.user.userId}`
+  }
+  return getClientIP(req)
 }
 
 /**
@@ -50,10 +69,7 @@ export const globalLimiter = rateLimit({
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
   skip: skipInTest,
-  keyGenerator: (req: Request) => {
-    // Use X-Forwarded-For header if behind proxy, otherwise use IP
-    return (req.ip || req.socket.remoteAddress || 'unknown') as string
-  },
+  keyGenerator: getClientIP,
 })
 
 /**
@@ -73,9 +89,7 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins
   skip: skipInTest,
-  keyGenerator: (req: Request) => {
-    return (req.ip || req.socket.remoteAddress || 'unknown') as string
-  },
+  keyGenerator: getClientIP,
 })
 
 /**
@@ -93,6 +107,7 @@ export const registrationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipInTest,
+  keyGenerator: getClientIP,
 })
 
 /**
@@ -110,6 +125,7 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipInTest,
+  keyGenerator: getClientIP,
 })
 
 /**
@@ -124,13 +140,7 @@ export const userLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipInTest,
-  keyGenerator: (req: AuthenticatedRequest) => {
-    // Use user ID if authenticated, otherwise fall back to IP
-    if (req.user?.userId) {
-      return `user:${req.user.userId}`
-    }
-    return (req.ip || req.socket.remoteAddress || 'unknown') as string
-  },
+  keyGenerator: getUserKey,
 })
 
 /**
@@ -181,4 +191,7 @@ export default {
   createRateLimiter,
   skipForTrustedIPs,
   rateLimitHandler,
+  getClientIP,
+  getUserKey,
+  skipInTest,
 }

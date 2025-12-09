@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [saas-level-1, api-service, mobile-app]
+        template: [saas-level-1, api-service, mobile-app, about-me-page]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,17 +40,25 @@ jobs:
         working-directory: templates/${{ matrix.template }}
         run: |
           echo "🔐 Running secret scan for ${{ matrix.template }}..."
-          if npm run -s security:secrets >/dev/null 2>&1; then
-            npm run security:secrets
+          if [ -f package.json ]; then
+            if npm run -s security:secrets >/dev/null 2>&1; then
+              npm run security:secrets
+            else
+              echo "⏭️  No security:secrets script defined, skipping."
+            fi
           else
-            echo "⏭️  No security:secrets script defined, skipping."
+            echo "⏭️  No package.json found, skipping secret scan."
           fi
 
       - name: Quick Security Check
         working-directory: templates/${{ matrix.template }}
         run: |
           echo "🔍 Running quick security audit for ${{ matrix.template }}..."
-          npm audit --audit-level=high --production || echo "⚠️ High/critical vulnerabilities found - check dependency-audit workflow for details"
+          if [ -f package.json ]; then
+            npm audit --audit-level=high --production || echo "⚠️ High/critical vulnerabilities found - check dependency-audit workflow for details"
+          else
+            echo "⏭️  No package.json found, skipping npm audit."
+          fi
 
       - name: Run smoke test
         env:
@@ -86,7 +94,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [saas-level-1, api-service]
+        template: [saas-level-1, api-service, mobile-app]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -107,11 +115,13 @@ jobs:
         run: |
           if [ "${{ matrix.template }}" = "saas-level-1" ]; then
             npm run test -- --coverage
+          elif [ "${{ matrix.template }}" = "mobile-app" ]; then
+            npm run test:coverage
           else
             npm test
           fi
       - name: Check coverage thresholds
-        if: matrix.template == 'saas-level-1' || matrix.template == 'api-service'
+        if: matrix.template == 'saas-level-1' || matrix.template == 'api-service' || matrix.template == 'mobile-app'
         working-directory: templates/${{ matrix.template }}
         run: |
           echo "📊 Checking coverage thresholds..."
@@ -142,14 +152,14 @@ jobs:
   accessibility-and-perf:
     needs: coverage
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - template: saas-level-1
-            command: "npm run test:accessibility"
-          - template: api-service
-            command: "npm run perf:smoke"
+      strategy:
+        fail-fast: false
+        matrix:
+          include:
+            - template: saas-level-1
+              command: "npm run test:accessibility"
+            - template: api-service
+              command: "npm run perf:smoke"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
