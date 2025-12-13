@@ -118,7 +118,7 @@ jobs:
               export DATABASE_URL="postgresql://test:test@localhost:5432/test"
               export JWT_SECRET="test-secret-32-chars-minimum"
               export PORT="3000"
-              npm test -- --testPathPattern=bootstrap || {
+              npm test -- src/__tests__/bootstrap.test.ts || {
                 echo "❌ Bootstrap tests failed - environment loading broken"
                 exit 1
               }
@@ -128,7 +128,7 @@ jobs:
               export NEXTAUTH_SECRET="test-secret-at-least-32-characters-long"
               export NEXTAUTH_URL="http://localhost:3000"
               export NODE_ENV="development"
-              npm test -- --run --testPathPattern=auth-bootstrap || {
+              npm test -- src/app/api/auth/__tests__/auth-bootstrap.test.tsx || {
                 echo "❌ Auth bootstrap tests failed - lazy-loading broken"
                 exit 1
               }
