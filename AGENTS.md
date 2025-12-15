@@ -3,7 +3,7 @@
 Contributor quickstart for the Project Starter Guide. Use this repo to maintain the decision matrix, deep-dive docs, and production-ready templates.
 
 ## Project Structure & Module Organization
-- `docs/` architecture, testing, security, and operations guides; start with `docs/ARCHITECTURE.md` and `docs/TESTING.md`.
+- `docs/` core guides only: `ARCHITECTURE.md`, `TESTING.md`, `DEPLOYMENT.md`.
 - `templates/` production starters (e.g., `saas-level-1`, `api-service`, `about-me-page`, `mobile-app`); each template has its own README and config.
 - `scripts/` reusable helpers such as `template-smoke-test.sh`, `smart-test-strategy.sh`, and automation setup.
 - Root landing pages (`landing-page*.html`) showcase the offering; keep them lightweight and static.
