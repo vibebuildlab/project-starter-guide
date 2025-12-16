@@ -35,12 +35,12 @@ Comprehensive guide for choosing the right architecture and technology stack for
 
 | Project Type | Complexity | Recommended Stack | Time to MVP |
 |--------------|------------|-------------------|-------------|
-| **Portfolio / About Me** | Level 1 | HTML5 + CSS3 + Vanilla JS | 1-2 days |
-| **Landing Page** | Level 1 | Next.js + Tailwind | 2-3 days |
-| **Blog / Documentation** | Level 2 | Next.js + MDX or Astro | 1 week |
-| **SaaS MVP** | Level 3 | Next.js + Supabase + Stripe | 2-4 weeks |
-| **E-commerce** | Level 3 | Next.js + Shopify/Stripe + DB | 3-6 weeks |
-| **Enterprise SaaS** | Level 4 | Microservices + K8s + Multiple DBs | 3-6 months |
+| **Portfolio / About Me** | Level 1 | HTML5 + CSS3 + Vanilla JS | 0.5-1 day |
+| **Landing Page** | Level 1 | Next.js + Tailwind | 1-2 days |
+| **Blog / Documentation** | Level 2 | Next.js + MDX or Astro | 2-4 days |
+| **SaaS MVP** | Level 3 | Next.js + Supabase + Stripe | 3-5 days |
+| **E-commerce** | Level 3 | Next.js + Shopify/Stripe + DB | 5-7 days |
+| **Enterprise SaaS** | Level 4 | Microservices + K8s + Multiple DBs | 3-6 weeks |
 
 ## Pricing & Licensing
 

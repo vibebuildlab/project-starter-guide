@@ -4,6 +4,17 @@ echo "🛡️  Running enhanced pre-commit checks..."
 # Get files being committed
 STAGED_FILES=$(git diff --cached --name-only)
 
+# Prefer GNU timeout if available; fall back to running without a timeout
+TIMEOUT_CMD=$(command -v timeout || command -v gtimeout || true)
+
+run_with_timeout() {
+  if [ -n "$TIMEOUT_CMD" ]; then
+    "$TIMEOUT_CMD" 300 "$@"
+  else
+    "$@"
+  fi
+}
+
 # Check 1: Template changes require smoke tests
 TEMPLATE_CHANGES=false
 if echo "$STAGED_FILES" | grep -q "templates/"; then
@@ -12,21 +23,21 @@ if echo "$STAGED_FILES" | grep -q "templates/"; then
 
   # Run smoke tests for all templates to ensure nothing is broken
   echo "🧪 Running mobile-app smoke test..."
-  if ! timeout 300 bash scripts/template-smoke-test.sh mobile-app > /dev/null 2>&1; then
+  if ! run_with_timeout bash scripts/template-smoke-test.sh mobile-app > /dev/null 2>&1; then
     echo "❌ Mobile app smoke test failed!"
     echo "   Run: bash scripts/template-smoke-test.sh mobile-app"
     exit 1
   fi
 
   echo "🧪 Running saas-level-1 smoke test..."
-  if ! timeout 300 bash scripts/template-smoke-test.sh saas-level-1 > /dev/null 2>&1; then
+  if ! run_with_timeout bash scripts/template-smoke-test.sh saas-level-1 > /dev/null 2>&1; then
     echo "❌ SaaS level-1 smoke test failed!"
     echo "   Run: bash scripts/template-smoke-test.sh saas-level-1"
     exit 1
   fi
 
   echo "🧪 Running api-service smoke test..."
-  if ! timeout 300 bash scripts/template-smoke-test.sh api-service > /dev/null 2>&1; then
+  if ! run_with_timeout bash scripts/template-smoke-test.sh api-service > /dev/null 2>&1; then
     echo "❌ API service smoke test failed!"
     echo "   Run: bash scripts/template-smoke-test.sh api-service"
     exit 1

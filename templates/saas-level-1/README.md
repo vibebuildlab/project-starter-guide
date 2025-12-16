@@ -2,7 +2,7 @@
 
 A **starter template** with modern tooling for building SaaS applications. Includes pre-configured Next.js 14, TypeScript, Tailwind CSS, NextAuth.js, Prisma, and Stripe setup.
 
-**Complexity Level:** 2 | **Timeline:** 1-2 weeks to customize | **Tech Stack:** Next.js + TypeScript + Tailwind + Prisma + NextAuth + Stripe
+**Complexity Level:** 3 | **Timeline:** 3-5 days to customize | **Tech Stack:** Next.js + TypeScript + Tailwind + Prisma + NextAuth + Stripe
 
 > Need the one-page checklist? Use the commands below as your quick start.
 

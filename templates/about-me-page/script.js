@@ -167,9 +167,6 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.disabled = false;
 
             showNotification('Thank you for your message! I\'ll get back to you soon.', 'success');
-
-            // Log form data (for development - remove in production)
-            console.log('Form submitted:', formData);
         }, 2000);
     }
 
@@ -278,8 +275,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
 
         // Close button functionality
-        const closeButton = notification.querySelector('.notification-close');
-        closeButton.addEventListener('click', () => {
+        const closeButtonEl = notification.querySelector('.notification-close');
+        closeButtonEl.addEventListener('click', () => {
             clearTimeout(autoHideTimer);
             hideNotification(notification);
         });
