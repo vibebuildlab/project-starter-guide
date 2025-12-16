@@ -4,6 +4,7 @@
 [![Code Quality](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/code-quality-review.yml/badge.svg)](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/code-quality-review.yml)
 [![Dependency Audit](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/dependency-audit.yml/badge.svg)](https://github.com/vibebuildlab/project-starter-guide/actions/workflows/dependency-audit.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Subscribe](https://img.shields.io/badge/Newsletter-Subscribe-blue?logo=substack)](https://blog.vibebuildlab.com/subscribe?utm_source=project-starter-guide-github)
 
 Comprehensive guide for choosing the right architecture and technology stack for any project type. A decision matrix and technical reference for developers starting new projects.
 
