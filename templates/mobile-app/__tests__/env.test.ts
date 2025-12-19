@@ -39,6 +39,12 @@ describe('env config', () => {
       expect(config.featureFlags).toEqual({})
     })
 
+    it('returns empty object for non-object feature flags JSON', () => {
+      process.env.EXPO_PUBLIC_FEATURE_FLAGS = '"enabled"'
+      const { config } = require('../src/config/env')
+      expect(config.featureFlags).toEqual({})
+    })
+
     it('returns empty object when feature flags not set', () => {
       delete process.env.EXPO_PUBLIC_FEATURE_FLAGS
       const { config } = require('../src/config/env')

@@ -9,11 +9,11 @@ import { env } from './config/env'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
-import morgan from 'morgan'
+import { requestLogger } from './lib/logger'
 
 import { errorHandler } from './middleware/errorHandler'
 import { notFound } from './middleware/notFound'
-import { globalLimiter, authLimiter, registrationLimiter } from './middleware/rateLimiting'
+import { globalLimiter } from './middleware/rateLimiting'
 import authRoutes from './routes/auth'
 import userRoutes from './routes/users'
 import healthRoutes from './routes/health'
@@ -26,18 +26,17 @@ app.set('trust proxy', 1)
 
 // Security middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: env.CORS_ORIGIN,
-    credentials: true,
-  }),
-);
+const corsOptions =
+  env.CORS_ORIGIN === '*'
+    ? { origin: '*', credentials: false }
+    : { origin: env.CORS_ORIGIN, credentials: true }
+app.use(cors(corsOptions));
 
 // Rate limiting (global)
 app.use(globalLimiter)
 
 // Logging
-app.use(morgan("combined"));
+app.use(requestLogger);
 
 // Body parsing
 app.use(express.json({ limit: "10mb" }));

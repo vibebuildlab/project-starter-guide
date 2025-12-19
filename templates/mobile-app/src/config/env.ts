@@ -12,7 +12,8 @@ export const config = {
   // Feature Flags
   featureFlags: (() => {
     try {
-      return JSON.parse(process.env.EXPO_PUBLIC_FEATURE_FLAGS || '{}')
+      const parsed = JSON.parse(process.env.EXPO_PUBLIC_FEATURE_FLAGS || '{}')
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, boolean>) : {}
     } catch {
       return {}
     }
@@ -28,9 +29,12 @@ export const config = {
 
 // Type-safe feature flag access
 export const isFeatureEnabled = (feature: string): boolean => {
-  // Safe: feature parameter is developer-controlled, not user input
-  // eslint-disable-next-line security/detect-object-injection
-  return Object.hasOwn(config.featureFlags, feature) && config.featureFlags[feature] === true
+  if (!Object.prototype.hasOwnProperty.call(config.featureFlags, feature)) {
+    return false
+  }
+  const entries = Object.entries(config.featureFlags) as [string, boolean][]
+  const match = entries.find(([key]) => key === feature)
+  return match?.[1] === true
 }
 
 // Log configuration in development

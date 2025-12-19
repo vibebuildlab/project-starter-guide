@@ -15,10 +15,7 @@
 
 import { Request, Response, NextFunction } from 'express'
 import dns from 'dns'
-import { promisify } from 'util'
 import { URL } from 'url'
-
-const dnsLookup = promisify(dns.lookup)
 
 // Private and reserved IP ranges that should be blocked
 const BLOCKED_IP_RANGES = [
@@ -39,20 +36,28 @@ const BLOCKED_IP_RANGES = [
   // IPv6 mapped IPv4 localhost
   /^::1$/,
   /^0:0:0:0:0:0:0:1$/,
-  // Cloud provider metadata endpoints
-  /^169\.254\.169\.254$/,
+  // IPv6 private and link-local ranges
+  /^fc00:/i,
   /^fd00:/i,
+  /^fe80:/i,
+  // IPv6 mapped IPv4 (private ranges)
+  /^::ffff:10\./i,
+  /^::ffff:172\.(1[6-9]|2[0-9]|3[0-1])\./i,
+  /^::ffff:192\.168\./i,
+  /^::ffff:127\./i,
 ]
+
+const METADATA_IP_RANGES = [/^169\.254\.169\.254$/]
 
 // Blocked hostnames
 const BLOCKED_HOSTNAMES = [
   'localhost',
   'localhost.localdomain',
-  'metadata.google.internal',
-  'metadata',
   'kubernetes.default',
   'kubernetes.default.svc',
 ]
+
+const METADATA_HOSTNAMES = ['metadata.google.internal', 'metadata']
 
 // Allowed protocols
 const ALLOWED_PROTOCOLS = ['http:', 'https:']
@@ -65,30 +70,34 @@ interface SSRFOptions {
   allowedPorts?: number[]
   blockPrivateIPs?: boolean
   blockMetadataEndpoints?: boolean
-  maxRedirects?: number
 }
 
 const defaultOptions: SSRFOptions = {
   allowedDomains: [],
-  allowedPorts: [80, 443, 8080, 8443],
+  allowedPorts: undefined,
   blockPrivateIPs: true,
   blockMetadataEndpoints: true,
-  maxRedirects: 0,
 }
 
 /**
  * Check if an IP address is in a blocked range
  */
-function isBlockedIP(ip: string): boolean {
-  return BLOCKED_IP_RANGES.some((pattern) => pattern.test(ip))
+function isBlockedIP(ip: string, blockMetadataEndpoints: boolean): boolean {
+  const ranges = blockMetadataEndpoints
+    ? [...BLOCKED_IP_RANGES, ...METADATA_IP_RANGES]
+    : BLOCKED_IP_RANGES
+  return ranges.some((pattern) => pattern.test(ip))
 }
 
 /**
  * Check if a hostname is blocked
  */
-function isBlockedHostname(hostname: string): boolean {
+function isBlockedHostname(hostname: string, blockMetadataEndpoints: boolean): boolean {
   const lowerHostname = hostname.toLowerCase()
-  return BLOCKED_HOSTNAMES.some(
+  const blocked = blockMetadataEndpoints
+    ? [...BLOCKED_HOSTNAMES, ...METADATA_HOSTNAMES]
+    : BLOCKED_HOSTNAMES
+  return blocked.some(
     (blocked) => lowerHostname === blocked || lowerHostname.endsWith(`.${blocked}`)
   )
 }
@@ -111,7 +120,7 @@ export async function validateURL(
     }
 
     // Check hostname
-    if (isBlockedHostname(url.hostname)) {
+    if (isBlockedHostname(url.hostname, opts.blockMetadataEndpoints ?? true)) {
       return { valid: false, error: 'Hostname is blocked' }
     }
 
@@ -123,6 +132,9 @@ export async function validateURL(
         : 80
     if (BLOCKED_PORTS.includes(port)) {
       return { valid: false, error: `Port ${port} is blocked` }
+    }
+    if (opts.allowedPorts && !opts.allowedPorts.includes(port)) {
+      return { valid: false, error: `Port ${port} is not allowed` }
     }
 
     // Check allowed domains whitelist
@@ -139,12 +151,13 @@ export async function validateURL(
     // DNS resolution check - validates the actual IP address
     if (opts.blockPrivateIPs) {
       try {
-        const { address } = await dnsLookup(url.hostname)
-        if (isBlockedIP(address)) {
-          return {
-            valid: false,
-            error: 'URL resolves to a blocked IP address',
-          }
+        const addresses = await dns.promises.lookup(url.hostname, { all: true })
+        if (
+          addresses.some(({ address }) =>
+            isBlockedIP(address, opts.blockMetadataEndpoints ?? true)
+          )
+        ) {
+          return { valid: false, error: 'URL resolves to a blocked IP address' }
         }
       } catch {
         return { valid: false, error: 'Failed to resolve hostname' }

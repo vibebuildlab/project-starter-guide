@@ -59,6 +59,9 @@ describe('Middleware', () => {
       notFound(req, res, next as NextFunction)
       expect(res.status).toHaveBeenCalledWith(404)
       expect(next).toHaveBeenCalledWith(expect.any(Error))
+      const errorArg = (next as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as
+        Error & { statusCode?: number }
+      expect(errorArg.statusCode).toBe(404)
     })
   })
 
@@ -76,6 +79,23 @@ describe('Middleware', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: false,
         error: 'test error',
+      })
+    })
+
+    it('uses existing response status when error has none', () => {
+      const err = new Error('not found')
+      const req = {} as Request
+      const res = {
+        statusCode: 404,
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as Response
+
+      errorHandler(err, req, res, vi.fn())
+      expect(res.status).toHaveBeenCalledWith(404)
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'not found',
       })
     })
   })

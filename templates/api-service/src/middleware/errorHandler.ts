@@ -9,7 +9,7 @@ export const errorHandler = (
   // Default error response
   let errorResponse = {
     message: err.message,
-    statusCode: err.statusCode || 500,
+    statusCode: err.statusCode || (res.statusCode !== 200 ? res.statusCode : 500),
   };
 
   // Log error

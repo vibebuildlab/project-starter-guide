@@ -15,13 +15,6 @@ export const register = async (req: Request, res: Response) => {
 
     const { email, password, name } = value;
 
-    if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET is not configured");
-      return res
-        .status(500)
-        .json({ error: "Authentication not configured correctly" });
-    }
-
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
