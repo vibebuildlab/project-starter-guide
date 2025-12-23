@@ -1,6 +1,6 @@
 # SaaS Level 1 Starter Template ![Coverage](https://img.shields.io/badge/Coverage-90%25+-brightgreen)
 
-A **starter template** with modern tooling for building SaaS applications. Includes pre-configured Next.js 14, TypeScript, Tailwind CSS, NextAuth.js, Prisma, and Stripe setup.
+A **starter template** with modern tooling for building SaaS applications. Includes pre-configured Next.js 16, TypeScript, Tailwind CSS, NextAuth.js, Prisma, and Stripe setup.
 
 **Complexity Level:** 3 | **Timeline:** 3-5 days to customize | **Tech Stack:** Next.js + TypeScript + Tailwind + Prisma + NextAuth + Stripe
 
@@ -8,7 +8,7 @@ A **starter template** with modern tooling for building SaaS applications. Inclu
 
 ## What's Included
 
-- 🚀 **Next.js 14** with App Router and TypeScript
+- 🚀 **Next.js 16** with App Router and TypeScript
 - 🎨 **Tailwind CSS** with responsive marketing page components
 - 💳 **Stripe Integration** (requires setup - see below)
 - 🔐 **NextAuth.js** configured (development mock provider included)
@@ -105,7 +105,7 @@ This is a **starter template**, not a complete SaaS application. You'll need to 
 ```
 saas-level-1/
 ├── src/
-│   ├── app/                 # Next.js 14 App Router
+│   ├── app/                 # Next.js 16 App Router
 │   │   ├── layout.tsx       # Root layout
 │   │   ├── page.tsx         # Home page
 │   │   ├── globals.css      # Global styles
@@ -241,7 +241,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 
 ## Tech Stack Details
 
-- **Framework:** Next.js 14 with App Router
+- **Framework:** Next.js 16 with App Router
 - **Language:** TypeScript for type safety
 - **Styling:** Tailwind CSS for rapid development
 - **UI Components:** Custom components with Tailwind
