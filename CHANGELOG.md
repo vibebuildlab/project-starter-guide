@@ -25,11 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CI workflow validation
 
 ### Security
+- **api-service**: SSRF protection hardening - DNS lookup timeout, pinned agent to mitigate DNS rebinding, ignore array query/body values
+- **api-service**: Auth header validation - require Bearer scheme, handle array headers
+- **api-service**: Error handler hides 5xx details in production
+- **api-service**: Explicit `TRUST_PROXY` env flag (prevents X-Forwarded-For spoofing)
+- **api-service**: Rate limiting now keys off `req.userId` (matches auth middleware)
 - Strengthened SSRF protection middleware with additional blocklist entries
 - Improved error handler and notFound middleware robustness
 - Added comprehensive unit tests for SSRF protection
 
+### Added
+- **api-service**: New `/api/fetch` route demonstrating SSRF-safe external request proxy
+- **saas-level-1**: Support both `GITHUB_CLIENT_ID` and legacy `GITHUB_ID` env vars
+- **saas-level-1**: Support `EMAIL_SERVER` connection string or `EMAIL_SERVER_*` parts
+- **saas-level-1**: Require `NEXTAUTH_URL` in production (no localhost default)
+
 ### Changed
+- **api-service**: Test infrastructure uses `os.tmpdir()` for portable lock files
 - Enhanced mobile-app env configuration and test coverage
 
 ## [2.2.0] - 2025-12-08
