@@ -31,10 +31,12 @@ router.get("/ready", async (req, res) => {
       error: null,
     };
   } catch (error) {
+    const errName = error instanceof Error ? error.constructor.name : "UnknownError";
+    const errMsg = error instanceof Error ? error.message : "Unknown database error";
     checks.database = {
       status: "unhealthy",
       latency: Date.now() - startTime,
-      error: error instanceof Error ? error.message : "Unknown database error",
+      error: `${errName}: ${errMsg}`,
     };
   }
 

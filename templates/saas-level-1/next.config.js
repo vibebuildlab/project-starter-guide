@@ -47,6 +47,20 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Required for Next.js
+              "style-src 'self' 'unsafe-inline'", // Required for Tailwind/styled-jsx
+              "img-src 'self' data: https://images.unsplash.com https://via.placeholder.com",
+              "font-src 'self'",
+              "connect-src 'self' https://api.stripe.com",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
         ],
       },
     ]

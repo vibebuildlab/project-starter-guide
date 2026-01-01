@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 export default function ProfileScreen() {
-  const handleSignOut = () => {
+  const handleSignOut = useCallback(() => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
       {
@@ -21,7 +21,7 @@ export default function ProfileScreen() {
         },
       },
     ]);
-  };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

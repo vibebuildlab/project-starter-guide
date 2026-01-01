@@ -43,9 +43,9 @@ describe('Middleware', () => {
       } as Request
 
       authenticateToken(req, res, next as NextFunction)
-      expect(res.status).toHaveBeenCalledWith(403)
+      expect(res.status).toHaveBeenCalledWith(401)
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Invalid or expired token',
+        error: 'Invalid token',
       })
     })
   })

@@ -11,6 +11,16 @@ import { config } from './src/config/env';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+const SCREEN_OPTIONS = {
+  headerStyle: {
+    backgroundColor: "#3b82f6",
+  },
+  headerTintColor: "#fff",
+  headerTitleStyle: {
+    fontWeight: "bold" as const,
+  },
+};
+
 export default function App() {
   useEffect(() => {
     // Example: Log API URL on app start
@@ -30,15 +40,7 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Home"
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: "#3b82f6",
-            },
-            headerTintColor: "#fff",
-            headerTitleStyle: {
-              fontWeight: "bold",
-            },
-          }}
+          screenOptions={SCREEN_OPTIONS}
         >
           <Stack.Screen
             name="Home"

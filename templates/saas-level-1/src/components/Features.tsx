@@ -39,8 +39,8 @@ export function Features() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <div key={index} className="feature-card text-center">
+          {features.map((feature) => (
+            <div key={feature.title} className="feature-card text-center">
               <div className="bg-primary-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <feature.icon className="h-8 w-8 text-primary-600" />
               </div>

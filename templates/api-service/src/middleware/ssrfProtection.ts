@@ -207,13 +207,15 @@ export async function validateURL(
           return { valid: false, error: 'URL resolves to a blocked IP address' }
         }
         resolvedAddresses = addresses.map(({ address }) => address)
-      } catch {
+      } catch (err) {
+        console.error('[SSRF] DNS resolution failed:', url.hostname, err)
         return { valid: false, error: 'Failed to resolve hostname' }
       }
     }
 
     return { valid: true, url, resolvedAddresses }
-  } catch {
+  } catch (err) {
+    console.error('[SSRF] URL validation failed:', urlString, err)
     return { valid: false, error: 'Invalid URL format' }
   }
 }

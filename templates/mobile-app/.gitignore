@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native build artifacts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+*.pem
+
+# Testing
+coverage/
+
+# Temporary files
+*.log
+*.tmp
+
+# Credentials
+google-services.json
+GoogleService-Info.plist

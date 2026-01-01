@@ -72,9 +72,9 @@ export function Pricing() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan, index) => (
+          {plans.map((plan) => (
             <div
-              key={index}
+              key={plan.name}
               className={`relative bg-white rounded-lg shadow-sm border-2 p-8 ${
                 plan.popular
                   ? 'border-primary-500 shadow-lg'
@@ -103,8 +103,8 @@ export function Pricing() {
               </div>
 
               <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-center">
                     <Check className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" />
                     <span className="text-gray-700">{feature}</span>
                   </li>

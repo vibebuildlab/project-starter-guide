@@ -2,6 +2,7 @@ import express from 'express'
 import http from 'http'
 import https from 'https'
 import ssrfProtection from '../middleware/ssrfProtection'
+import { authenticateToken } from '../middleware/auth'
 
 const router = express.Router()
 
@@ -30,6 +31,11 @@ function requestText(
           chunks.push(chunk)
         })
 
+        res.on('error', (err) => {
+          req.destroy()
+          reject(err)
+        })
+
         res.on('end', () => {
           resolve({
             status: res.statusCode ?? 502,
@@ -46,7 +52,8 @@ function requestText(
 }
 
 // Example: fetch external content safely using the pinned agent created by ssrfProtection.
-router.get('/fetch', ssrfProtection(), async (req, res) => {
+// Requires authentication to prevent abuse as a proxy service.
+router.get('/fetch', authenticateToken, ssrfProtection(), async (req, res) => {
   const reqWithUrl = req as express.Request & {
     validatedUrl?: URL
     validatedUrlAgent?: http.Agent | https.Agent

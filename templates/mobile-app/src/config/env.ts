@@ -9,12 +9,18 @@ export const config = {
   // API Configuration
   apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com',
 
-  // Feature Flags
+  // Feature Flags (parse error = empty object, logged as error in production)
   featureFlags: (() => {
+    const raw = process.env.EXPO_PUBLIC_FEATURE_FLAGS || '{}'
     try {
-      const parsed = JSON.parse(process.env.EXPO_PUBLIC_FEATURE_FLAGS || '{}')
+      const parsed = JSON.parse(raw)
       return parsed && typeof parsed === 'object' ? (parsed as Record<string, boolean>) : {}
-    } catch {
+    } catch (error) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[Config] CRITICAL: Failed to parse EXPO_PUBLIC_FEATURE_FLAGS:', raw, error)
+      } else {
+        console.warn('[Config] Failed to parse EXPO_PUBLIC_FEATURE_FLAGS, using empty defaults:', error)
+      }
       return {}
     }
   })(),

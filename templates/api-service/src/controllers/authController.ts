@@ -5,6 +5,7 @@ import { validateRegister, validateLogin } from '../utils/validation'
 import type { AuthenticatedRequest } from '../types/express'
 import { prisma } from '../lib/prisma'
 import { env } from '../config/env'
+import { logger } from '../lib/logger'
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -40,9 +41,9 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    // Generate JWT token
+    // Generate JWT token (4 hour expiry - implement refresh tokens for longer sessions)
     const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "4h",
     });
 
     return res.status(201).json({
@@ -51,7 +52,7 @@ export const register = async (req: Request, res: Response) => {
       token,
     });
   } catch (error: unknown) {
-    console.error("Registration error:", error);
+    logger.error("Registration error", { error, requestId: req.requestId });
 
     // Handle unique constraint violation (email already exists)
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002' &&
@@ -85,9 +86,9 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Generate JWT token
+    // Generate JWT token (4 hour expiry - implement refresh tokens for longer sessions)
     const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "4h",
     });
 
     // Update last login
@@ -106,7 +107,7 @@ export const login = async (req: Request, res: Response) => {
       token,
     });
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error", { error, requestId: req.requestId });
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -134,7 +135,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.json({ user });
   } catch (error) {
-    console.error("Get profile error:", error);
+    logger.error("Get profile error", { error, requestId: req.requestId });
     return res.status(500).json({ error: "Internal server error" });
   }
 };

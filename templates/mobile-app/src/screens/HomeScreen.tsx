@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,10 @@ interface Props {
 }
 
 export default function HomeScreen({ navigation }: Props) {
+  const handleNavigateToProfile = useCallback(() => {
+    navigation.navigate("Profile");
+  }, [navigation]);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -42,7 +46,7 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate("Profile")}
+            onPress={handleNavigateToProfile}
           >
             <Text style={styles.buttonText}>Go to Profile</Text>
           </TouchableOpacity>
