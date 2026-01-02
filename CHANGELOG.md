@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **api-service**: Replaced console.error with structured logger in SSRF middleware (CODE-001)
+- **api-service**: Customized Helmet.js with explicit CSP directives (SEC-008)
+- **api-service**: Added CORS wildcard startup warning for development (SEC-009)
 - **api-service**: Server startup now handles port binding errors (EADDRINUSE, EACCES)
 - **api-service**: Added `res.on('error')` handler in fetch.ts to prevent hanging requests
 - **api-service**: JWT verification now enforces HS256 algorithm (prevents algorithm confusion)
@@ -37,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CI workflow validation
 
 ### Security
+- **api-service**: Added TRUST_PROXY documentation for reverse proxy deployments (SEC-006)
+- **api-service**: Documented refresh token rotation as optional enhancement (SEC-007)
 - **api-service**: SSRF protection hardening - DNS lookup timeout, pinned agent to mitigate DNS rebinding, ignore array query/body values
 - **api-service**: Auth header validation - require Bearer scheme, handle array headers
 - **api-service**: Error handler hides 5xx details in production
