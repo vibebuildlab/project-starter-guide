@@ -7,10 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **saas-level-1**: Role-based access control (RBAC) with Prisma enum (user, member, admin, owner)
+- **saas-level-1**: End-to-end role flow from database → JWT/session → client
+- **saas-level-1**: Prisma migrations tracked in git for starter template
+- **api-service**: Comprehensive SSRF protection with DNS rebinding prevention
+- **api-service**: Redis-backed rate limiting with fallback to in-memory
+- **api-service**: Fetch timeout enforcement (10s) and response size limits (1MB)
+
 ### Changed
 - **api-service**: Refactored error handling with centralized response utilities
 - **api-service**: Added HTTP status code and auth constants for maintainability
 - **api-service**: Streamlined routing structure and removed unused routes
+- **saas-level-1**: Role field now uses Prisma enum for type safety
+- **saas-level-1**: Auth session callback explicitly defaults to 'user' role
 
 ### Fixed
 - **api-service**: Replaced console.error with structured logger in SSRF middleware (CODE-001)
@@ -45,16 +55,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CI workflow validation
 
 ### Security
+- **api-service**: SSRF protection now blocks comprehensive IP ranges (IPv4, IPv6, metadata endpoints, cloud provider IPs)
+- **api-service**: DNS rebinding protection via pinned HTTP/HTTPS agents
+- **api-service**: DNS lookup timeout (2s) prevents hanging on malicious domains
+- **api-service**: Redis rate limiting with proper TypeScript types prevents runtime errors
+- **api-service**: Fetch route enforces 10-second timeout and 1MB response limit
 - **api-service**: Added TRUST_PROXY documentation for reverse proxy deployments (SEC-006)
 - **api-service**: Documented refresh token rotation as optional enhancement (SEC-007)
-- **api-service**: SSRF protection hardening - DNS lookup timeout, pinned agent to mitigate DNS rebinding, ignore array query/body values
 - **api-service**: Auth header validation - require Bearer scheme, handle array headers
 - **api-service**: Error handler hides 5xx details in production
 - **api-service**: Explicit `TRUST_PROXY` env flag (prevents X-Forwarded-For spoofing)
 - **api-service**: Rate limiting now keys off `req.userId` (matches auth middleware)
-- Strengthened SSRF protection middleware with additional blocklist entries
-- Improved error handler and notFound middleware robustness
-- Added comprehensive unit tests for SSRF protection
+- **scripts**: Smoke test updated to use correct Stripe env variable (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
 ### Added
 - **api-service**: New `/api/fetch` route demonstrating SSRF-safe external request proxy

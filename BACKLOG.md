@@ -1,6 +1,6 @@
 # Project Starter Guide - Backlog
 
-**Last Updated**: 2026-01-02 (Refactoring api-service error handling)
+**Last Updated**: 2026-01-02 (Security hardening and RBAC implementation)
 **Priority System**: P0 (Critical - Block Release) → P1 (Important - Fix Soon) → P2 (Nice-to-have) → P3 (Future)
 
 ## 🚨 P0 - Critical (Block Release)
@@ -436,8 +436,8 @@ All P0 items from previous review completed ✅ (2025-11-11)
 **Impact**: Direct console.error calls bypass structured logging infrastructure (JSON output, request tracing, error formatting)
 **Root Cause**: SSRF middleware uses console.error instead of project's logger utility
 **Resolution**: Replaced console.error with logger.error for consistency
-**Completed**: 2026-01-01
-**Commit**: Pending
+**Completed**: 2026-01-02
+**Commit**: f6eaec4
 
 ### SEC-006 | Document TRUST_PROXY for reverse proxy deployments | S | ✅ Completed
 **Category**: Security - Deployment Safety
@@ -446,8 +446,8 @@ All P0 items from previous review completed ✅ (2025-11-11)
 **Impact**: When deployed behind reverse proxy (Nginx, CloudFlare, ALB), rate limiting may use proxy IP instead of client IP
 **Root Cause**: TRUST_PROXY env var exists but not documented in .env.example or deployment guide
 **Resolution**: Added to .env.example with comments and deployment section in README with warning box
-**Completed**: 2026-01-01
-**Commit**: Pending
+**Completed**: 2026-01-02
+**Commit**: 57809d5
 
 ### SEC-007 | Implement refresh token rotation | L | 📝 Documented
 **Category**: Security - Authentication - Optional Enhancement
@@ -471,8 +471,8 @@ All P0 items from previous review completed ✅ (2025-11-11)
 **Impact**: Default Helmet CSP may not be optimal for API use cases
 **Root Cause**: Using helmet() without configuration options
 **Resolution**: Added explicit CSP directives (defaultSrc, scriptSrc, styleSrc, imgSrc, connectSrc, fontSrc, objectSrc, mediaSrc, frameSrc) with crossOriginEmbedderPolicy disabled for API use cases
-**Completed**: 2026-01-01
-**Commit**: Pending
+**Completed**: 2026-01-02
+**Commit**: 57809d5
 
 ### SEC-009 | Add CORS wildcard startup warning | S | ✅ Completed
 **Category**: Security - Configuration Safety
@@ -481,8 +481,8 @@ All P0 items from previous review completed ✅ (2025-11-11)
 **Impact**: Developers may accidentally deploy with wildcard CORS (production check exists but could use startup warning)
 **Root Cause**: Silent fallback to wildcard CORS in development
 **Resolution**: Added console.warn when CORS_ORIGIN=* in development mode with clear messaging
-**Completed**: 2026-01-01
-**Commit**: Pending
+**Completed**: 2026-01-02
+**Commit**: 57809d5
 
 ### META-001 | Automate CLAUDE.md maintenance across projects | M | ✅ Completed
 **Category**: Project Management - Infrastructure
