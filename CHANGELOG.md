@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **api-service**: Refactored error handling with centralized response utilities
+- **api-service**: Added HTTP status code and auth constants for maintainability
+- **api-service**: Streamlined routing structure and removed unused routes
+
 ### Fixed
 - **api-service**: Replaced console.error with structured logger in SSRF middleware (CODE-001)
 - **api-service**: Customized Helmet.js with explicit CSP directives (SEC-008)

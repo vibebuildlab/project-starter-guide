@@ -1,6 +1,6 @@
 # Project Starter Guide - Backlog
 
-**Last Updated**: 2025-12-19 (Security hardening complete - all P0/P1/P2 done!)
+**Last Updated**: 2026-01-02 (Refactoring api-service error handling)
 **Priority System**: P0 (Critical - Block Release) → P1 (Important - Fix Soon) → P2 (Nice-to-have) → P3 (Future)
 
 ## 🚨 P0 - Critical (Block Release)
@@ -413,6 +413,21 @@ All P0 items from previous review completed ✅ (2025-11-11)
 **Commits**: 96ec170, 74a4f1b
 
 ## 📋 P2 - Recommended (Post-Launch)
+
+### REFACTOR-001 | Improve api-service error handling and responses | M | ✅ Completed
+**Category**: Code Quality - Maintainability
+**Files**: Multiple api-service files (error handling, constants, utilities)
+**Impact**: Centralized response utilities and constants improve code maintainability
+**Resolution**: Refactored error handling infrastructure
+- Created centralized response utilities (`src/utils/responses.ts`)
+- Added HTTP status code constants (`src/constants/http.ts`)
+- Added auth constants (`src/constants/auth.ts`)
+- Added rate limit constants (`src/constants/rateLimit.ts`)
+- Enhanced error handling middleware consistency
+- Updated auth controller patterns
+- Streamlined routing structure (removed unused routes)
+**Completed**: 2026-01-02
+**Commit**: 57809d5
 
 ### CODE-001 | Standardize on structured logger (replace console.error) | S | ✅ Completed
 **Category**: Code Quality - Consistency
