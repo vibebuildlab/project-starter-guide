@@ -92,11 +92,60 @@ const { valid, url, error } = await validateExternalURL(userUrl)
 This template implements Express.js security best practices:
 
 - **Environment Variables**: Proper .env file handling with .env.example template
-- **Security Middleware**: Helmet.js for security headers
-- **CORS Configuration**: Configurable CORS settings for API access
+- **Security Middleware**: Helmet.js with custom CSP directives
+- **CORS Configuration**: Configurable CORS with wildcard warning in development
 - **Request Validation**: Joi schema validation for API inputs
 - **Error Handling**: Secure error handling that doesn't leak stack traces
 - **Rate Limiting**: Built-in rate limiting middleware
+- **Structured Logging**: All security events logged via Winston (not console.error)
+- **Reverse Proxy Support**: TRUST_PROXY flag for deployments behind proxies
+
+#### Helmet.js Configuration
+
+**Location:** `src/app.ts`
+
+Custom Content Security Policy (CSP) directives:
+
+```typescript
+helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow cross-origin requests for API
+})
+```
+
+#### CORS Configuration
+
+**Location:** `src/app.ts`
+
+- Wildcard (`*`) allowed in development with startup warning
+- Production requires specific origin in `CORS_ORIGIN` env var
+- Credentials enabled for non-wildcard origins
+
+#### TRUST_PROXY Configuration
+
+**Location:** `src/app.ts`, `src/config/env.ts`
+
+**⚠️ CRITICAL for reverse proxy deployments:**
+
+When deploying behind Nginx, CloudFlare, AWS ALB, Vercel, etc.:
+
+1. Set `TRUST_PROXY=true` in environment variables
+2. Ensures rate limiting and security features use real client IPs from `X-Forwarded-For`
+3. Without this, all requests appear to come from proxy IP (bypasses rate limits)
+
+See `README.md` deployment section for detailed configuration.
 
 ### Development Security
 

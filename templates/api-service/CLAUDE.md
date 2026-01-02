@@ -39,8 +39,12 @@ api-service/
 ## Security
 
 - **Rate Limiting**: 100 req/15min global, 5 auth failures/15min
-- **SSRF Protection**: Use `validateExternalURL()` for user URLs
-- **Env Validation**: Fails fast on missing vars
+- **SSRF Protection**: Use `validateExternalURL()` for user URLs, DNS rebinding prevention
+- **Helmet.js**: Custom CSP directives, security headers
+- **CORS**: Configurable origins, wildcard warning in dev
+- **TRUST_PROXY**: Set `TRUST_PROXY=true` when behind reverse proxy (Nginx, CloudFlare, AWS ALB)
+- **Structured Logging**: All errors use logger (not console.error)
+- **Env Validation**: Fails fast on missing/invalid vars
 
 ## Common Tasks
 

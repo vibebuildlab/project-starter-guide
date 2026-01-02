@@ -1,5 +1,43 @@
 # Testing Documentation
 
+## Test Coverage
+
+### Unit Tests (`tests/unit/`)
+
+- **Authentication** (`auth.test.ts`): JWT generation, validation, middleware
+- **Health Checks** (`health.test.ts`): Liveness and readiness endpoints
+- **Middleware** (`middleware.test.ts`): Error handling, 404 handling
+- **Rate Limiting** (`rateLimiting.test.ts`): Global and auth-specific limiters
+- **SSRF Protection** (`ssrfProtection.test.ts`): URL validation, IP blocking, DNS rebinding
+
+### Integration Tests (`tests/integration/`)
+
+- **Auth Flow** (`auth.integration.test.ts`): Registration → Login → Profile with real database
+- **Comprehensive Auth** (`auth.comprehensive.integration.test.ts`): Edge cases, constraints, concurrency
+
+### Smoke Tests (`tests/smoke/`)
+
+- **Health Checks** (`health.smoke.test.ts`): Server startup, route accessibility
+
+### Security Test Coverage
+
+| Feature | Unit Tests | Integration Tests | Coverage |
+|---------|-----------|-------------------|----------|
+| SSRF Protection | ✅ Private IPs, DNS rebinding | ✅ Real URL validation | Full |
+| Rate Limiting | ✅ Limit enforcement | ✅ Real request tracking | Full |
+| JWT Auth | ✅ Token validation | ✅ Full auth flow | Full |
+| Helmet/CSP | ⚠️ Config verification | ⚠️ Header checks | Partial |
+| CORS | ⚠️ Config verification | ⚠️ Origin checks | Partial |
+| Structured Logging | ✅ Logger usage | ✅ Log output | Full |
+
+### Coverage Requirements
+
+- **Line Coverage**: ≥90%
+- **Function Coverage**: ≥90%
+- **Branch Coverage**: ≥65%
+
+Run `npm test -- --coverage` to view detailed coverage report.
+
 ## Integration Testing Approach
 
 ### Current Implementation (Template)
