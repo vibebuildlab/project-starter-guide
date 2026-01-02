@@ -7,6 +7,7 @@ import { authenticateToken } from '../middleware/auth'
 const router = express.Router()
 
 const MAX_RESPONSE_BYTES = 1024 * 1024
+const REQUEST_TIMEOUT_MS = 10000
 
 function requestText(
   url: URL,
@@ -46,6 +47,9 @@ function requestText(
       })
     })
 
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error('Upstream request timeout'))
+    })
     req.on('error', reject)
     req.end()
   })

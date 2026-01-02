@@ -29,7 +29,6 @@ build/
 
 # Prisma generated files
 prisma/**/test-client/
-prisma/migrations/
 node_modules/.prisma/
 
 # Test artifacts

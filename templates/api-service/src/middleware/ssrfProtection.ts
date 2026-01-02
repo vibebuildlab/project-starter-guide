@@ -33,13 +33,17 @@ const BLOCKED_IP_RANGES = [
   /^169\.254\./,
   // Carrier-grade NAT
   /^100\.(6[4-9]|[7-9][0-9]|1[0-1][0-9]|12[0-7])\./,
+  // "This host" / unspecified (0.0.0.0/8)
+  /^0\./,
   // Reserved for documentation
   /^192\.0\.2\./,
   /^198\.51\.100\./,
   /^203\.0\.113\./,
   // IPv6 mapped IPv4 localhost
   /^::1$/,
+  /^::$/,
   /^0:0:0:0:0:0:0:1$/,
+  /^0:0:0:0:0:0:0:0$/,
   // IPv6 private and link-local ranges
   /^fc00:/i,
   /^fd00:/i,
@@ -49,6 +53,7 @@ const BLOCKED_IP_RANGES = [
   /^::ffff:172\.(1[6-9]|2[0-9]|3[0-1])\./i,
   /^::ffff:192\.168\./i,
   /^::ffff:127\./i,
+  /^::ffff:0\./i,
 ]
 
 const METADATA_IP_RANGES = [/^169\.254\.169\.254$/]

@@ -48,7 +48,9 @@
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.0",
-    "prisma": "^7.1.0"
+    "prisma": "^7.1.0",
+    "rate-limit-redis": "^4.2.0",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

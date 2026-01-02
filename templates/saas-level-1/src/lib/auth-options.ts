@@ -4,6 +4,7 @@ import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
+import { env } from '@/lib/env'
 
 // Lazy-load Prisma only when needed (OAuth providers)
 // This prevents DATABASE_URL errors when using mock/credentials providers
@@ -20,9 +21,8 @@ const getPrisma = (): PrismaClient => {
 
 const providers: NextAuthOptions['providers'] = []
 
-const githubClientId = process.env.GITHUB_CLIENT_ID || process.env.GITHUB_ID
-const githubClientSecret =
-  process.env.GITHUB_CLIENT_SECRET || process.env.GITHUB_SECRET
+const githubClientId = env.GITHUB_CLIENT_ID || env.GITHUB_ID
+const githubClientSecret = env.GITHUB_CLIENT_SECRET || env.GITHUB_SECRET
 
 if (githubClientId && githubClientSecret) {
   providers.push(
@@ -37,11 +37,11 @@ if (githubClientId && githubClientSecret) {
   )
 }
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
     })
   )
 } else {
@@ -50,13 +50,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   )
 }
 
-const hasEmailServerString = !!process.env.EMAIL_SERVER && !!process.env.EMAIL_FROM
+const hasEmailServerString = !!env.EMAIL_SERVER && !!env.EMAIL_FROM
 const hasEmailServerParts =
-  !!process.env.EMAIL_SERVER_HOST &&
-  !!process.env.EMAIL_SERVER_PORT &&
-  !!process.env.EMAIL_SERVER_USER &&
-  !!process.env.EMAIL_SERVER_PASSWORD &&
-  !!process.env.EMAIL_FROM
+  !!env.EMAIL_SERVER_HOST &&
+  !!env.EMAIL_SERVER_PORT &&
+  !!env.EMAIL_SERVER_USER &&
+  !!env.EMAIL_SERVER_PASSWORD &&
+  !!env.EMAIL_FROM
 
 if (hasEmailServerString || hasEmailServerParts) {
   // Lazy-load EmailProvider to avoid requiring nodemailer when not needed
@@ -64,16 +64,16 @@ if (hasEmailServerString || hasEmailServerParts) {
   providers.push(
     EmailProvider({
       server: hasEmailServerString
-        ? process.env.EMAIL_SERVER
+        ? env.EMAIL_SERVER
         : {
-            host: process.env.EMAIL_SERVER_HOST,
-            port: Number(process.env.EMAIL_SERVER_PORT),
+            host: env.EMAIL_SERVER_HOST,
+            port: Number(env.EMAIL_SERVER_PORT),
             auth: {
-              user: process.env.EMAIL_SERVER_USER,
-              pass: process.env.EMAIL_SERVER_PASSWORD,
+              user: env.EMAIL_SERVER_USER,
+              pass: env.EMAIL_SERVER_PASSWORD,
             },
           },
-      from: process.env.EMAIL_FROM,
+      from: env.EMAIL_FROM,
     })
   )
 } else {
@@ -84,7 +84,7 @@ if (hasEmailServerString || hasEmailServerParts) {
 
 if (providers.length === 0) {
   // Fail fast in production - don't boot with no real providers
-  if (process.env.NODE_ENV === 'production') {
+  if (env.NODE_ENV === 'production') {
     throw new Error(
       '[auth] FATAL: No authentication providers configured in production. ' +
       'Set environment variables for at least one provider (GitHub, Google, Email). ' +
@@ -115,7 +115,7 @@ if (providers.length === 0) {
 }
 
 // Validate NEXTAUTH_SECRET in production
-if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
+if (env.NODE_ENV === 'production' && !env.NEXTAUTH_SECRET) {
   throw new Error(
     '[auth] FATAL: NEXTAUTH_SECRET is required in production. ' +
     'Generate one with: openssl rand -base64 32. ' +
@@ -143,6 +143,12 @@ export const authOptions: NextAuthOptions = {
         if (!session.user.id) {
           session.user.id = user?.id || token?.sub || ''
         }
+        if (!session.user.role) {
+          session.user.role =
+            (user && 'role' in user ? user.role : undefined) ||
+            token.role ||
+            'user' // Explicit default fallback
+        }
       }
       return session
     },
@@ -152,6 +158,9 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = user.email
         token.name = user.name
+        if ('role' in user) {
+          token.role = user.role
+        }
       }
       // Persist the OAuth access_token to the token right after signin
       if (account) {
@@ -172,7 +181,7 @@ export const authOptions: NextAuthOptions = {
     // Use JWT strategy for credentials-only mode (dev/mock)
     strategy: hasOAuthProviders ? 'database' : 'jwt',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET,
 }
 
 export { getPrisma }

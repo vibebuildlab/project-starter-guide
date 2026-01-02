@@ -21,6 +21,8 @@
 
 import rateLimit, { Options } from 'express-rate-limit'
 import { Request, Response } from 'express'
+import { RedisStore, type RedisReply, type SendCommandFn } from 'rate-limit-redis'
+import { createClient } from 'redis'
 import { RateLimits } from '../constants/rateLimit'
 import { HttpStatus } from '../constants/http'
 
@@ -74,24 +76,22 @@ function createRedisStore() {
   }
 
   try {
-    // Dynamic import to avoid requiring redis when not configured
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const RedisStore = require('rate-limit-redis')
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createClient } = require('redis')
-
     const client = createClient({ url: process.env.REDIS_URL })
     client.connect().catch((err: Error) => {
       console.error('[RateLimit] Failed to connect to Redis:', err.message)
       console.error('[RateLimit] Falling back to in-memory rate limiting')
     })
 
-    return new RedisStore({ client, prefix: 'rl:' })
+    const sendCommand: SendCommandFn = async (...args: string[]) => {
+      const reply = await client.sendCommand(args)
+      return (reply ?? 0) as RedisReply
+    }
+    return new RedisStore({ sendCommand, prefix: 'rl:' })
   } catch (error) {
     console.error(
-      '[RateLimit] Redis modules not installed. Install with: npm install redis rate-limit-redis'
+      '[RateLimit] Failed to configure Redis rate limiting. Falling back to in-memory store.'
     )
-    console.error('[RateLimit] Falling back to in-memory rate limiting')
+    console.error('[RateLimit] Error:', error)
     return undefined
   }
 }

@@ -195,7 +195,7 @@ echo "🚀 Testing production-like configuration..."
 if [[ "$TEMPLATE_PATH" == "saas-level-1" ]]; then
   # Add full OAuth/database env for production testing
   export DATABASE_URL="postgresql://user:password@localhost:5432/test_db"
-  export STRIPE_PUBLISHABLE_KEY="pk_test_dummy"
+  export NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_dummy"
   export STRIPE_SECRET_KEY="sk_test_dummy"
   export STRIPE_WEBHOOK_SECRET="whsec_dummy"
   export GITHUB_ID="dummy-github-client-id"

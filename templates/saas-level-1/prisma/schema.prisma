@@ -40,6 +40,13 @@ model Session {
   @@index([expires])
 }
 
+enum Role {
+  user
+  member
+  admin
+  owner
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -50,6 +57,7 @@ model User {
   sessions      Session[]
 
   // SaaS specific fields
+  role             Role      @default(user)
   stripeCustomerId String?
   subscription     Subscription?
   createdAt        DateTime @default(now())

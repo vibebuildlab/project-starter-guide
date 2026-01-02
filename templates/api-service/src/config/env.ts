@@ -103,15 +103,15 @@ function getEnvVar(
  * Called once at application startup
  */
 export function validateEnv(): EnvConfig {
-  const isProduction = process.env.NODE_ENV === 'production'
-  const isTest = process.env.NODE_ENV === 'test'
-
   // Validate NODE_ENV
   const NODE_ENV = getEnvVar('NODE_ENV', {
     defaultValue: 'development',
     validate: val => ['development', 'production', 'test'].includes(val),
     errorMessage: 'NODE_ENV must be one of: development, production, test',
   })
+
+  const isProduction = NODE_ENV === 'production'
+  const isTest = NODE_ENV === 'test'
 
   // Validate PORT
   const portStr = getEnvVar('PORT', {
