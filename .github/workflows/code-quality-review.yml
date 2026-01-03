@@ -146,8 +146,8 @@ jobs:
         run: |
           echo "🔐 Checking security patterns..."
 
-          # Check for hardcoded secrets
-          if grep -r "sk_live\|pk_live\|password.*=" src/ --exclude-dir=__tests__ --exclude-dir=node_modules; then
+          # Check for hardcoded secrets (exclude destructuring assignments)
+          if grep -rE "sk_live|pk_live|password\s*=\s*['\"]" src/ --exclude-dir=__tests__ --exclude-dir=node_modules; then
             echo "❌ CRITICAL: Potential hardcoded secrets found"
             exit 1
           fi
