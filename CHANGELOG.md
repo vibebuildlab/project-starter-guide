@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **api-service**: Redis-backed rate limiting with fallback to in-memory
 - **api-service**: Fetch timeout enforcement (10s) and response size limits (1MB)
 
+### Fixed
+
+- **api-service**: Regenerated Prisma client to include Role field
+- **api-service**: Updated tests to match structured error response format (error, message, code)
+- **api-service**: Added ESLint disable comments with security justifications in roleHierarchy
+- **ci**: Refined hardcoded secret detection to exclude destructuring assignments
+- **all**: Auto-formatted 33 files with Prettier
+
 ### Changed
 
 - **api-service**: Refactored error handling with centralized response utilities
