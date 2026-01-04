@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **B-186**: Merged saas-monetization-templates into project-starter-guide
+  - Added `templates/monetization/` with complete revenue infrastructure
+  - License validation system with HMAC-SHA256 signatures
+  - Stripe integration templates (payments, webhooks, subscriptions)
+  - Legal compliance templates (GDPR/CCPA privacy, terms, copyright, disclaimer)
+  - Marketing templates (landing pages, email campaigns)
+  - Interactive bootstrap script with placeholder replacement
+  - 4-tier licensing system (FREE/STARTER/PRO/ENTERPRISE)
+  - Feature gating patterns and developer mode
+  - Updated README with new positioning: "Free SaaS starters with built-in monetization"
+  - Added monetization badges and VBL branding
+  - Added Value Ladder section linking to VBL paid products
 - **api-service**: Role-based access control (RBAC) with role hierarchy system (ADMIN > DEVELOPER > FREE)
 - **api-service**: Authorize middleware for permission-based access control
 - **api-service**: DNS caching layer for improved external request performance

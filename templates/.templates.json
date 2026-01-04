@@ -183,6 +183,52 @@
           "example": "whsec_..."
         }
       ]
+    },
+    "monetization": {
+      "name": "SaaS Monetization System",
+      "description": "Complete revenue infrastructure with Stripe, licensing, legal, and marketing templates",
+      "complexity": 0,
+      "stack": ["Node.js", "Stripe", "HMAC-SHA256"],
+      "features": [
+        "license-validation",
+        "stripe-integration",
+        "legal-compliance",
+        "marketing-templates"
+      ],
+      "customizations": {
+        "projectName": {
+          "type": "text",
+          "label": "Project name",
+          "required": true
+        },
+        "domain": {
+          "type": "text",
+          "label": "Domain",
+          "default": "yoursite.com"
+        },
+        "companyName": {
+          "type": "text",
+          "label": "Company name",
+          "required": true
+        }
+      },
+      "envVars": [
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "example": "sk_live_..."
+        },
+        {
+          "key": "LICENSE_SIGNING_SECRET",
+          "required": true,
+          "example": "your-secure-random-secret"
+        },
+        {
+          "key": "STRIPE_WEBHOOK_SECRET",
+          "required": false,
+          "example": "whsec_..."
+        }
+      ]
     }
   },
   "defaults": {
