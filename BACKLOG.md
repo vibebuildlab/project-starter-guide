@@ -424,6 +424,107 @@ All P0 items from previous review completed ✅ (2025-11-11)
 
 ## ⚠️ P1 - Important (Should Fix Soon)
 
+### TEST-006 | Add integration tests for authorize middleware (api-service) | M | ⏳ Pending
+
+**Category**: Testing - Critical Gap
+**Coverage Gap**: authorize.ts has 0% coverage - RBAC middleware completely untested
+**Files**: `templates/api-service/src/middleware/authorize.ts`, `templates/api-service/tests/integration/authorize.integration.test.ts` (new)
+**Impact**: Critical security middleware (requireRole, requireMinimumRole, requireAnyRole) has zero test coverage
+**Current Coverage**: 0% lines, 0% branches, 0% functions
+**Target Coverage**: 90% lines, 80% branches, 90% functions
+**Root Cause**: Middleware added but integration tests never written
+**Proposed Tests**:
+
+- requireRole: Valid role, invalid role, missing role, unauthenticated
+- requireMinimumRole: Sufficient role, insufficient role, role hierarchy validation
+- requireAnyRole: Single matching role, multiple roles, no matching roles
+- Edge cases: Missing user, invalid tokens, role not in request
+
+**Value Drivers**: Prevents unauthorized access bugs (retention), ensures RBAC works correctly (differentiation)
+**Effort**: M (4-16h) - Requires test setup for authenticated requests + role mocking
+
+### TEST-007 | Add tests for roleHierarchy utilities (api-service) | S | ⏳ Pending
+
+**Category**: Testing - Critical Gap
+**Coverage Gap**: roleHierarchy.ts has 0% coverage - role permission logic untested
+**Files**: `templates/api-service/src/utils/roleHierarchy.ts`, `templates/api-service/tests/unit/roleHierarchy.test.ts` (new)
+**Impact**: Role comparison logic (hasMinimumRole, hasExactRole, hasAnyRole) has zero test coverage
+**Current Coverage**: 0% lines, 0% branches, 0% functions
+**Target Coverage**: 100% lines, 100% branches, 100% functions
+**Root Cause**: Utility functions added but unit tests never written
+**Proposed Tests**:
+
+- hasMinimumRole: ADMIN >= DEVELOPER >= FREE hierarchy validation
+- hasExactRole: Exact match validation
+- hasAnyRole: Multiple role matching
+- isAdmin, isDeveloper: Convenience helpers
+- Edge cases: Invalid roles, undefined roles
+
+**Value Drivers**: Prevents privilege escalation bugs (retention), ensures role hierarchy correctness (differentiation)
+**Effort**: S (< 4h) - Pure utility functions, easy to test
+
+### TEST-008 | Add tests for error response utilities (api-service) | S | ⏳ Pending
+
+**Category**: Testing - Important Gap
+**Coverage Gap**: responses.ts has 33% coverage - error handling partially untested
+**Files**: `templates/api-service/src/utils/responses.ts`, `templates/api-service/tests/unit/responses.test.ts` (new)
+**Impact**: Error response utilities have low test coverage
+**Current Coverage**: 33% lines, 17% branches, 17% functions
+**Target Coverage**: 90% lines, 80% branches, 90% functions
+**Root Cause**: Only basic error responses tested, specific error helpers untested
+**Proposed Tests**:
+
+- invalidCredentials: Returns 401 with AUTH_INVALID_CREDENTIALS
+- tokenExpired: Returns 401 with AUTH_TOKEN_EXPIRED
+- resourceExists: Returns 409 with VALIDATION_DUPLICATE
+- validationError: Returns 400 with VALIDATION_FAILED + details
+- rateLimitExceeded: Returns 429 with RATE_LIMIT_EXCEEDED + retryAfter
+
+**Value Drivers**: Ensures consistent error responses (retention), improves API reliability (differentiation)
+**Effort**: S (< 4h) - Pure utility functions, straightforward tests
+
+### TEST-009 | Add integration tests for rate limiting (api-service) | M | ⏳ Pending
+
+**Category**: Testing - Important Gap
+**Coverage Gap**: rateLimiting.ts has 55% coverage - Redis fallback untested
+**Files**: `templates/api-service/src/middleware/rateLimiting.ts`, `templates/api-service/tests/integration/rateLimiting.integration.test.ts` (new)
+**Impact**: Rate limiting Redis fallback and error handling partially untested
+**Current Coverage**: 55% lines, 39% branches, 78% functions
+**Target Coverage**: 85% lines, 70% branches, 90% functions
+**Root Cause**: Only happy path tested, Redis connection failures and fallback logic untested
+**Proposed Tests**:
+
+- Redis connection failure: Falls back to in-memory store
+- Redis unavailable in production: Throws error on startup
+- Per-user rate limiting: User ID vs IP-based limits
+- Rate limit headers: X-RateLimit-* headers present
+- 429 responses: Retry-After header present
+
+**Value Drivers**: Prevents abuse (retention), ensures production stability (differentiation)
+**Effort**: M (4-16h) - Requires Redis mock setup + error injection
+
+### TEST-010 | Add comprehensive tests for NextAuth configuration (saas-level-1) | L | ⏳ Pending
+
+**Category**: Testing - Critical Gap
+**Coverage Gap**: auth-options.ts has 0% coverage - NextAuth config completely untested
+**Files**: `templates/saas-level-1/src/lib/auth-options.ts`, `templates/saas-level-1/src/lib/__tests__/auth-options.test.ts` (new)
+**Impact**: NextAuth configuration (providers, callbacks, sessions) has zero test coverage
+**Current Coverage**: 0% lines, 0% branches, 0% functions
+**Target Coverage**: 80% lines, 70% branches, 80% functions
+**Root Cause**: NextAuth config is complex integration code, never tested
+**Proposed Tests**:
+
+- Provider detection: GitHub, Google, Email, Credentials
+- Strategy selection: Database vs JWT based on provider types
+- Session callback: session.user.id preservation for database strategy
+- Production validation: Throws on missing providers/secret in production
+- JWT callback: Token → session mapping
+- SignIn callback: OAuth vs credentials flow
+- Adapter: Prisma adapter wiring
+
+**Value Drivers**: Prevents authentication bugs (retention), ensures login works correctly (revenue - users can't pay if they can't log in)
+**Effort**: L (16-40h) - Complex integration tests, requires mocking NextAuth internals + Prisma adapter
+
 ### MOB-002 | Upgrade mobile template to Expo SDK 54 | L | ✅ Completed
 
 **Category**: Mobile - Security Upgrade
@@ -879,10 +980,10 @@ npm run generate -- --defaults      # Non-interactive with defaults
 
 ## Summary Statistics
 
-**Total Open Items**: 1 (0 P0 + 0 P1 + 0 P2 + 1 P3)
+**Total Open Items**: 6 (0 P0 + 5 P1 + 0 P2 + 1 P3)
 
 - P0 Critical: 0 ✅ ALL COMPLETE!
-- P1 Important: 0 ✅ ALL COMPLETE! (All v2.6.1 & Production Scale blockers resolved)
+- P1 Important: 5 ⏳ (Test Coverage Improvements: TEST-006, TEST-007, TEST-008, TEST-009, TEST-010)
 - P2 Recommended: 0 ✅ ALL COMPLETE! (All strategic improvements implemented)
 - P3 Future: 1 (DOC-005: Video tutorials)
 
@@ -962,11 +1063,20 @@ npm run generate -- --defaults      # Non-interactive with defaults
 
 ---
 
-**Next Actions** (Updated 2025-12-24):
+**Next Actions** (Updated 2026-01-07):
 
-1. ✅ **MOB-002**: Expo SDK 54 upgrade - VERIFIED COMPLETE (0 vulnerabilities)
-2. ✅ **FEAT-003**: Template generator - COMPLETE (interactive CLI, 74 tests)
-3. ✅ **FEAT-002**: QA integration tests - COMPLETE (74 tests, all passing)
-4. 💡 **DOC-005**: Video tutorials - only remaining P3 item
+**P1 - Test Coverage Improvements**:
 
-**All P0/P1/P2/P3 items complete except DOC-005!** Project is feature-complete.
+1. ⏳ **TEST-007**: Add roleHierarchy tests (S effort) - Quick win, pure utility functions
+2. ⏳ **TEST-008**: Add error response tests (S effort) - Quick win, straightforward tests
+3. ⏳ **TEST-006**: Add authorize middleware tests (M effort) - Critical security code
+4. ⏳ **TEST-009**: Add rate limiting integration tests (M effort) - Redis fallback validation
+5. ⏳ **TEST-010**: Add NextAuth config tests (L effort) - Complex but critical auth validation
+
+**P3 - Future**:
+6. 💡 **DOC-005**: Video tutorials - content monetization
+
+**Current Status**: 5 P1 test coverage items identified. Templates currently failing coverage thresholds:
+
+- api-service: 53% line coverage (needs 90%) - Critical gaps in RBAC, error handling, rate limiting
+- saas-level-1: 51% line coverage (needs 90%) - Critical gap in NextAuth configuration
