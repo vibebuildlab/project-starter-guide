@@ -654,11 +654,11 @@ All P0 items from previous review completed ✅ (2025-11-11)
 ### SEC-009 | Add CORS wildcard startup warning | S | ✅ Completed
 
 **Category**: Security - Configuration Safety
-**Deep Review Finding**: No warning when CORS_ORIGIN=_ in development
+**Deep Review Finding**: No warning when CORS*ORIGIN=* in development
 **Files**: `templates/api-service/src/app.ts:29-33`
 **Impact**: Developers may accidentally deploy with wildcard CORS (production check exists but could use startup warning)
 **Root Cause**: Silent fallback to wildcard CORS in development
-**Resolution**: Added console.warn when CORS_ORIGIN=_ in development mode with clear messaging
+**Resolution**: Added console.warn when CORS*ORIGIN=* in development mode with clear messaging
 **Completed**: 2026-01-02
 **Commit**: 57809d5
 

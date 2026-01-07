@@ -126,6 +126,23 @@ export function canAccessResource(
   return isOwner(user, resource) || can(user, permission)
 }
 
+async function getAuthenticatedUser(): Promise<RBACUser | NextResponse> {
+  const session = await getServerSession(authOptions)
+
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
+  return {
+    id: (session.user as RBACUser & { id?: string }).id || '',
+    email: session.user.email,
+    role: (session.user as RBACUser).role || ROLES.USER,
+  }
+}
+
 /**
  * API route middleware to require a minimum role
  * Returns 401 if not authenticated, 403 if insufficient permissions
@@ -141,29 +158,17 @@ export async function requireRole(
   _request: Request,
   requiredRole: Role
 ): Promise<RBACUser | NextResponse> {
-  const session = await getServerSession(authOptions)
+  const result = await getAuthenticatedUser()
+  if (result instanceof NextResponse) return result
 
-  if (!session?.user) {
-    return NextResponse.json(
-      { error: 'Authentication required' },
-      { status: 401 }
-    )
-  }
-
-  const user: RBACUser = {
-    id: (session.user as RBACUser & { id?: string }).id || '',
-    email: session.user.email,
-    role: (session.user as RBACUser).role || ROLES.USER,
-  }
-
-  if (!hasRole(user, requiredRole)) {
+  if (!hasRole(result, requiredRole)) {
     return NextResponse.json(
       { error: 'Insufficient permissions', required: requiredRole },
       { status: 403 }
     )
   }
 
-  return user
+  return result
 }
 
 /**
@@ -180,29 +185,17 @@ export async function requirePermission(
   _request: Request,
   permission: Permission
 ): Promise<RBACUser | NextResponse> {
-  const session = await getServerSession(authOptions)
+  const result = await getAuthenticatedUser()
+  if (result instanceof NextResponse) return result
 
-  if (!session?.user) {
-    return NextResponse.json(
-      { error: 'Authentication required' },
-      { status: 401 }
-    )
-  }
-
-  const user: RBACUser = {
-    id: (session.user as RBACUser & { id?: string }).id || '',
-    email: session.user.email,
-    role: (session.user as RBACUser).role || ROLES.USER,
-  }
-
-  if (!can(user, permission)) {
+  if (!can(result, permission)) {
     return NextResponse.json(
       { error: 'Permission denied', required: permission },
       { status: 403 }
     )
   }
 
-  return user
+  return result
 }
 
 /**

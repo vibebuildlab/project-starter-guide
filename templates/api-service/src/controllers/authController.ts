@@ -10,6 +10,21 @@ import { HttpStatus } from '../constants/http'
 import { AuthConfig } from '../constants/auth'
 import { errorResponses } from '../utils/responses'
 
+interface PrismaError {
+  code: string
+  meta?: { target?: string[] }
+}
+
+function isPrismaUniqueConstraintError(error: unknown, field: string): boolean {
+  if (!error || typeof error !== 'object') return false
+  const prismaError = error as PrismaError
+  return (
+    prismaError.code === 'P2002' &&
+    Array.isArray(prismaError.meta?.target) &&
+    prismaError.meta.target.includes(field)
+  )
+}
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { error, value } = validateRegister(req.body)
@@ -57,19 +72,7 @@ export const register = async (req: Request, res: Response) => {
   } catch (error: unknown) {
     logger.error('Registration error', { error, requestId: req.requestId })
 
-    // Handle unique constraint violation (email already exists)
-    if (
-      error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      error.code === 'P2002' &&
-      'meta' in error &&
-      error.meta &&
-      typeof error.meta === 'object' &&
-      'target' in error.meta &&
-      Array.isArray(error.meta.target) &&
-      error.meta.target.includes('email')
-    ) {
+    if (isPrismaUniqueConstraintError(error, 'email')) {
       return errorResponses.badRequest(res, 'User with this email already exists')
     }
 

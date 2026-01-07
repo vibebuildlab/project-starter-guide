@@ -5,6 +5,7 @@ Complete revenue infrastructure for building sustainable SaaS businesses.
 ## What's Included
 
 ### 💳 Payment Infrastructure (`lib/`)
+
 - **licensing.js** - License validation system with HMAC-SHA256 signatures
 - **stripe-integration.js** - Complete Stripe payment flows (checkout, subscriptions, webhooks)
 - **cli-activation.js** - Command-line license activation
@@ -13,19 +14,23 @@ Complete revenue infrastructure for building sustainable SaaS businesses.
 - **stripe-webhook.js** - Webhook handler for payment events
 
 ### 📄 Legal Compliance (`legal/`)
+
 - **privacy-policy.md** - GDPR/CCPA compliant privacy policy template
 - **terms-of-service.md** - Standard terms of service
 - **copyright.md** - Copyright and DMCA policy
 - **disclaimer.md** - Liability disclaimers
 
 ### 📣 Marketing Assets (`marketing/`)
+
 - **landing-page.html** - Conversion-optimized landing page
 - **beta-email-campaign.md** - Email sequence for beta users
 
 ### 💼 Customer Portal (`billing/`)
+
 - **dashboard.html** - Customer billing dashboard
 
 ### 🚀 Bootstrap Script (`scripts/`)
+
 - **create-saas-monetization.js** - Interactive setup wizard
 
 ## Quick Start
@@ -38,6 +43,7 @@ node path/to/templates/monetization/scripts/create-saas-monetization.js
 ```
 
 The script will:
+
 1. Ask for project details (name, domain, company name)
 2. Copy templates to your project
 3. Replace placeholders with your values
@@ -47,6 +53,7 @@ The script will:
 ### Option 2: Manual Integration
 
 1. **Copy needed files** to your project:
+
    ```bash
    cp templates/monetization/lib/licensing.js src/lib/
    cp templates/monetization/lib/stripe-integration.js src/lib/
@@ -60,6 +67,7 @@ The script will:
    - `{{LICENSE_PREFIX}}` - Prefix for license keys (e.g., "MYAPP")
 
 3. **Configure environment variables**:
+
    ```bash
    STRIPE_SECRET_KEY=sk_live_...
    STRIPE_WEBHOOK_SECRET=whsec_...
@@ -67,31 +75,32 @@ The script will:
    ```
 
 4. **Integrate into your app**:
+
    ```javascript
-   const { LicensingSystem } = require('./lib/licensing')
-   const { StripeIntegration } = require('./lib/stripe-integration')
+   const { LicensingSystem } = require("./lib/licensing");
+   const { StripeIntegration } = require("./lib/stripe-integration");
 
    const licensing = new LicensingSystem({
-     productName: 'Your Product',
-     licensePrefix: 'MYAPP'
-   })
+     productName: "Your Product",
+     licensePrefix: "MYAPP",
+   });
 
    const stripe = new StripeIntegration({
-     productName: 'Your Product',
-     tiers: ['FREE', 'STARTER', 'PRO', 'ENTERPRISE']
-   })
+     productName: "Your Product",
+     tiers: ["FREE", "STARTER", "PRO", "ENTERPRISE"],
+   });
    ```
 
 ## Licensing Tiers
 
 The templates support 4-tier licensing:
 
-| Tier | Description | Use Case |
-|------|-------------|----------|
-| **FREE** | Basic features | Testing, personal use |
-| **STARTER** | Core features | Small projects, solo founders |
-| **PRO** | All features | Growing businesses |
-| **ENTERPRISE** | Premium support | Large organizations |
+| Tier           | Description     | Use Case                      |
+| -------------- | --------------- | ----------------------------- |
+| **FREE**       | Basic features  | Testing, personal use         |
+| **STARTER**    | Core features   | Small projects, solo founders |
+| **PRO**        | All features    | Growing businesses            |
+| **ENTERPRISE** | Premium support | Large organizations           |
 
 ## Feature Gating
 
@@ -131,22 +140,25 @@ const session = await stripe.createCheckoutSession({
 ### Handle Webhooks
 
 ```javascript
-app.post('/webhooks/stripe', async (req, res) => {
-  const event = stripe.constructWebhookEvent(req.body, req.headers['stripe-signature'])
+app.post("/webhooks/stripe", async (req, res) => {
+  const event = stripe.constructWebhookEvent(
+    req.body,
+    req.headers["stripe-signature"],
+  );
 
   switch (event.type) {
-    case 'checkout.session.completed':
+    case "checkout.session.completed":
       // Generate license key
       // Send welcome email
-      break
-    case 'customer.subscription.deleted':
+      break;
+    case "customer.subscription.deleted":
       // Revoke license
       // Send cancellation email
-      break
+      break;
   }
 
-  res.json({ received: true })
-})
+  res.json({ received: true });
+});
 ```
 
 ## Legal Compliance
@@ -175,9 +187,9 @@ For tool creators building on these templates:
 
 ```javascript
 const licensing = new LicensingSystem({
-  productName: 'Your Product',
-  developerMode: true // Disables license validation
-})
+  productName: "Your Product",
+  developerMode: true, // Disables license validation
+});
 
 // All features unlocked for development/testing
 ```

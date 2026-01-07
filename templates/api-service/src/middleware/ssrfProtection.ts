@@ -159,86 +159,109 @@ export function createPinnedAgent(url: URL, resolvedAddresses?: string[]) {
   return new http.Agent({ lookup })
 }
 
+interface ValidationResult {
+  valid: boolean
+  error?: string
+  url?: URL
+  resolvedAddresses?: string[]
+}
+
+function getDefaultPort(protocol: string): number {
+  return protocol === 'https:' ? 443 : 80
+}
+
+function validateProtocol(url: URL): string | null {
+  if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
+    return `Protocol ${url.protocol} is not allowed`
+  }
+  return null
+}
+
+function validatePort(url: URL, allowedPorts?: number[]): string | null {
+  const port = url.port ? parseInt(url.port, 10) : getDefaultPort(url.protocol)
+  if (BLOCKED_PORTS.includes(port)) {
+    return `Port ${port} is blocked`
+  }
+  if (allowedPorts && !allowedPorts.includes(port)) {
+    return `Port ${port} is not allowed`
+  }
+  return null
+}
+
+function validateDomain(url: URL, allowedDomains?: string[]): string | null {
+  if (!allowedDomains || allowedDomains.length === 0) {
+    return null
+  }
+  const isAllowed = allowedDomains.some(
+    domain => url.hostname === domain || url.hostname.endsWith(`.${domain}`)
+  )
+  return isAllowed ? null : 'Domain not in allowed list'
+}
+
+async function validateDNS(
+  url: URL,
+  blockMetadataEndpoints: boolean
+): Promise<{ error: string | null; addresses?: string[] }> {
+  try {
+    const addresses = await withTimeout(
+      dns.promises.lookup(url.hostname, { all: true }),
+      DNS_LOOKUP_TIMEOUT_MS
+    )
+    const hasBlockedIP = addresses.some(({ address }) =>
+      isBlockedIP(address, blockMetadataEndpoints)
+    )
+    if (hasBlockedIP) {
+      return { error: 'URL resolves to a blocked IP address' }
+    }
+    return { error: null, addresses: addresses.map(({ address }) => address) }
+  } catch (err) {
+    logger.error('[SSRF] DNS resolution failed', {
+      hostname: url.hostname,
+      error: err,
+    })
+    return { error: 'Failed to resolve hostname' }
+  }
+}
+
 /**
  * Validate a URL for SSRF vulnerabilities
  */
 export async function validateURL(
   urlString: string,
   options: SSRFOptions = {}
-): Promise<{
-  valid: boolean
-  error?: string
-  url?: URL
-  resolvedAddresses?: string[]
-}> {
+): Promise<ValidationResult> {
   const opts = { ...defaultOptions, ...options }
+  const blockMetadata = opts.blockMetadataEndpoints ?? true
 
+  let url: URL
   try {
-    const url = new URL(urlString)
-
-    // Check protocol
-    if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
-      return { valid: false, error: `Protocol ${url.protocol} is not allowed` }
-    }
-
-    // Check hostname
-    if (isBlockedHostname(url.hostname, opts.blockMetadataEndpoints ?? true)) {
-      return { valid: false, error: 'Hostname is blocked' }
-    }
-
-    // Check port
-    const port = url.port
-      ? parseInt(url.port, 10)
-      : url.protocol === 'https:'
-        ? 443
-        : 80
-    if (BLOCKED_PORTS.includes(port)) {
-      return { valid: false, error: `Port ${port} is blocked` }
-    }
-    if (opts.allowedPorts && !opts.allowedPorts.includes(port)) {
-      return { valid: false, error: `Port ${port} is not allowed` }
-    }
-
-    // Check allowed domains whitelist
-    if (opts.allowedDomains && opts.allowedDomains.length > 0) {
-      const isAllowed = opts.allowedDomains.some(
-        domain => url.hostname === domain || url.hostname.endsWith(`.${domain}`)
-      )
-      if (!isAllowed) {
-        return { valid: false, error: 'Domain not in allowed list' }
-      }
-    }
-
-    // DNS resolution check - validates the actual IP address
-    let resolvedAddresses: string[] | undefined
-    if (opts.blockPrivateIPs) {
-      try {
-        const addresses = await withTimeout(
-          dns.promises.lookup(url.hostname, { all: true }),
-          DNS_LOOKUP_TIMEOUT_MS
-        )
-        if (
-          addresses.some(({ address }) =>
-            isBlockedIP(address, opts.blockMetadataEndpoints ?? true)
-          )
-        ) {
-          return { valid: false, error: 'URL resolves to a blocked IP address' }
-        }
-        resolvedAddresses = addresses.map(({ address }) => address)
-      } catch (err) {
-        logger.error('[SSRF] DNS resolution failed', {
-          hostname: url.hostname,
-          error: err,
-        })
-        return { valid: false, error: 'Failed to resolve hostname' }
-      }
-    }
-
-    return { valid: true, url, resolvedAddresses }
-  } catch (err) {
-    logger.error('[SSRF] URL validation failed', { urlString, error: err })
+    url = new URL(urlString)
+  } catch {
+    logger.error('[SSRF] URL validation failed', { urlString })
     return { valid: false, error: 'Invalid URL format' }
   }
+
+  const protocolError = validateProtocol(url)
+  if (protocolError) return { valid: false, error: protocolError }
+
+  if (isBlockedHostname(url.hostname, blockMetadata)) {
+    return { valid: false, error: 'Hostname is blocked' }
+  }
+
+  const portError = validatePort(url, opts.allowedPorts)
+  if (portError) return { valid: false, error: portError }
+
+  const domainError = validateDomain(url, opts.allowedDomains)
+  if (domainError) return { valid: false, error: domainError }
+
+  let resolvedAddresses: string[] | undefined
+  if (opts.blockPrivateIPs) {
+    const dnsResult = await validateDNS(url, blockMetadata)
+    if (dnsResult.error) return { valid: false, error: dnsResult.error }
+    resolvedAddresses = dnsResult.addresses
+  }
+
+  return { valid: true, url, resolvedAddresses }
 }
 
 /**

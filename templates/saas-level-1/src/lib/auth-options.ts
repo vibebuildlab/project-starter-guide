@@ -1,15 +1,14 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import type { PrismaClient } from '@prisma/client'
 import type { NextAuthOptions } from 'next-auth'
+import type { Provider } from 'next-auth/providers'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import { env } from '@/lib/env'
 
-// Lazy-load Prisma only when needed (OAuth providers)
-// This prevents DATABASE_URL errors when using mock/credentials providers
 let prisma: PrismaClient | null = null
-const getPrisma = (): PrismaClient => {
+function getPrisma(): PrismaClient {
   if (!prisma) {
     const { prisma: prismaInstance } = require('@/lib/prisma') as {
       prisma: PrismaClient
@@ -19,68 +18,84 @@ const getPrisma = (): PrismaClient => {
   return prisma
 }
 
-const providers: NextAuthOptions['providers'] = []
-
-const githubClientId = env.GITHUB_CLIENT_ID || env.GITHUB_ID
-const githubClientSecret = env.GITHUB_CLIENT_SECRET || env.GITHUB_SECRET
-
-if (githubClientId && githubClientSecret) {
-  providers.push(
-    GitHubProvider({
-      clientId: githubClientId,
-      clientSecret: githubClientSecret,
-    })
-  )
-} else {
-  console.warn(
-    '[auth] GitHub provider disabled – set GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET (or GITHUB_ID/GITHUB_SECRET).'
-  )
+function tryAddProvider(
+  providers: Provider[],
+  name: string,
+  envHint: string,
+  factory: () => Provider | null
+): void {
+  const provider = factory()
+  if (provider) {
+    providers.push(provider)
+  } else {
+    console.warn(`[auth] ${name} provider disabled – ${envHint}`)
+  }
 }
 
-if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
-  providers.push(
-    GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-    })
-  )
-} else {
-  console.warn(
-    '[auth] Google provider disabled – GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET not set.'
-  )
+function createGitHubProvider(): Provider | null {
+  const clientId = env.GITHUB_CLIENT_ID || env.GITHUB_ID
+  const clientSecret = env.GITHUB_CLIENT_SECRET || env.GITHUB_SECRET
+  if (!clientId || !clientSecret) return null
+  return GitHubProvider({ clientId, clientSecret })
 }
 
-const hasEmailServerString = !!env.EMAIL_SERVER && !!env.EMAIL_FROM
-const hasEmailServerParts =
-  !!env.EMAIL_SERVER_HOST &&
-  !!env.EMAIL_SERVER_PORT &&
-  !!env.EMAIL_SERVER_USER &&
-  !!env.EMAIL_SERVER_PASSWORD &&
-  !!env.EMAIL_FROM
+function createGoogleProvider(): Provider | null {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return null
+  return GoogleProvider({
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+  })
+}
 
-if (hasEmailServerString || hasEmailServerParts) {
-  // Lazy-load EmailProvider to avoid requiring nodemailer when not needed
+function createEmailProvider(): Provider | null {
+  const hasConnectionString = env.EMAIL_SERVER && env.EMAIL_FROM
+  const hasServerParts =
+    env.EMAIL_SERVER_HOST &&
+    env.EMAIL_SERVER_PORT &&
+    env.EMAIL_SERVER_USER &&
+    env.EMAIL_SERVER_PASSWORD &&
+    env.EMAIL_FROM
+
+  if (!hasConnectionString && !hasServerParts) return null
+
   const EmailProvider = require('next-auth/providers/email').default
-  providers.push(
-    EmailProvider({
-      server: hasEmailServerString
-        ? env.EMAIL_SERVER
-        : {
-            host: env.EMAIL_SERVER_HOST,
-            port: Number(env.EMAIL_SERVER_PORT),
-            auth: {
-              user: env.EMAIL_SERVER_USER,
-              pass: env.EMAIL_SERVER_PASSWORD,
-            },
-          },
-      from: env.EMAIL_FROM,
-    })
-  )
-} else {
-  console.warn(
-    '[auth] Email provider disabled – set EMAIL_SERVER + EMAIL_FROM, or EMAIL_SERVER_HOST/PORT/USER/PASSWORD + EMAIL_FROM.'
-  )
+  const server = hasConnectionString
+    ? env.EMAIL_SERVER
+    : {
+        host: env.EMAIL_SERVER_HOST,
+        port: Number(env.EMAIL_SERVER_PORT),
+        auth: { user: env.EMAIL_SERVER_USER, pass: env.EMAIL_SERVER_PASSWORD },
+      }
+
+  return EmailProvider({ server, from: env.EMAIL_FROM })
 }
+
+function buildProviders(): Provider[] {
+  const providers: Provider[] = []
+
+  tryAddProvider(
+    providers,
+    'GitHub',
+    'set GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET (or GITHUB_ID/GITHUB_SECRET).',
+    createGitHubProvider
+  )
+  tryAddProvider(
+    providers,
+    'Google',
+    'GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET not set.',
+    createGoogleProvider
+  )
+  tryAddProvider(
+    providers,
+    'Email',
+    'set EMAIL_SERVER + EMAIL_FROM, or EMAIL_SERVER_HOST/PORT/USER/PASSWORD + EMAIL_FROM.',
+    createEmailProvider
+  )
+
+  return providers
+}
+
+const providers = buildProviders()
 
 if (providers.length === 0) {
   // Fail fast in production - don't boot with no real providers

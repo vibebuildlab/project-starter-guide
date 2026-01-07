@@ -1,4 +1,4 @@
-'use strict'
+"use strict";
 
 /**
  * CLI helper to show license status for {{PROJECT_NAME}}
@@ -7,10 +7,10 @@
  * Copyright (c) 2025 Vibe Build Lab LLC
  * Licensed under MIT License
  */
-const { showLicenseStatus } = require('./licensing')
+const { showLicenseStatus } = require("./licensing");
 
 function run() {
-  showLicenseStatus()
+  showLicenseStatus();
 }
 
-run()
+run();

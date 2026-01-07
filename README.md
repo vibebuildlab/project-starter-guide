@@ -42,15 +42,15 @@ Launch revenue-generating projects faster with production-ready templates includ
 
 ## Quick Start Decision Matrix
 
-| Project Type               | Complexity | Recommended Stack                  | Time to MVP |
-| -------------------------- | ---------- | ---------------------------------- | ----------- |
-| **SaaS Monetization**      | Level 0    | Node.js + Stripe + Templates       | 0.5-1 day   |
-| **Portfolio / About Me**   | Level 1    | HTML5 + CSS3 + Vanilla JS          | 0.5-1 day   |
-| **Landing Page**           | Level 1    | Next.js + Tailwind                 | 1-2 days    |
-| **Blog / Documentation**   | Level 2    | Next.js + MDX or Astro             | 2-4 days    |
-| **SaaS MVP**               | Level 3    | Next.js + Supabase + Stripe        | 3-5 days    |
-| **E-commerce**             | Level 3    | Next.js + Shopify/Stripe + DB      | 5-7 days    |
-| **Enterprise SaaS**        | Level 4    | Microservices + K8s + Multiple DBs | 3-6 weeks   |
+| Project Type             | Complexity | Recommended Stack                  | Time to MVP |
+| ------------------------ | ---------- | ---------------------------------- | ----------- |
+| **SaaS Monetization**    | Level 0    | Node.js + Stripe + Templates       | 0.5-1 day   |
+| **Portfolio / About Me** | Level 1    | HTML5 + CSS3 + Vanilla JS          | 0.5-1 day   |
+| **Landing Page**         | Level 1    | Next.js + Tailwind                 | 1-2 days    |
+| **Blog / Documentation** | Level 2    | Next.js + MDX or Astro             | 2-4 days    |
+| **SaaS MVP**             | Level 3    | Next.js + Supabase + Stripe        | 3-5 days    |
+| **E-commerce**           | Level 3    | Next.js + Shopify/Stripe + DB      | 5-7 days    |
+| **Enterprise SaaS**      | Level 4    | Microservices + K8s + Multiple DBs | 3-6 weeks   |
 
 ## Pricing & Licensing
 

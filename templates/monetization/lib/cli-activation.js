@@ -1,4 +1,4 @@
-'use strict'
+"use strict";
 
 /**
  * CLI helper to activate a license for {{PROJECT_NAME}}
@@ -9,15 +9,15 @@
  *
  * Learn more: https://vibebuildlab.com
  */
-const { promptLicenseActivation } = require('./licensing')
+const { promptLicenseActivation } = require("./licensing");
 
 async function run() {
-  const result = await promptLicenseActivation()
+  const result = await promptLicenseActivation();
 
   if (!result.success) {
-    console.log(`❌ Activation failed: ${result.error || 'Please try again'}`)
-    process.exitCode = 1
+    console.log(`❌ Activation failed: ${result.error || "Please try again"}`);
+    process.exitCode = 1;
   }
 }
 
-run()
+run();

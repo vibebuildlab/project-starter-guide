@@ -18,8 +18,8 @@
     "check:links": "markdown-link-check README.md",
     "check:links:all": "find . -name '*.md' -not -path './node_modules/*' -not -path './templates/*' -exec markdown-link-check {} \\;",
     "validate": "npm run lint:md && npm run check:links",
-    "format": "prettier --write '**/*.{js,json,md}' --ignore-path .gitignore",
-    "format:check": "prettier --check '**/*.{js,json,md}' --ignore-path .gitignore",
+    "format": "prettier --write '**/*.{js,json,md}'",
+    "format:check": "prettier --check '**/*.{js,json,md}'",
     "preview:template": "cd templates/about-me-page && python3 -m http.server 8000",
     "test:qa": "node tests/integration/qa-integration.test.mjs"
   },
