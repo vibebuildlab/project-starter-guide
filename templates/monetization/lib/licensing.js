@@ -286,8 +286,30 @@ function verifyLicenseSignature(payload, signature) {
     const expBuffer = Buffer.from(expectedSignature, 'utf8')
     if (sigBuffer.length !== expBuffer.length) return false
     return crypto.timingSafeEqual(sigBuffer, expBuffer)
-  } catch {
-    // If signature verification fails, treat as invalid
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    const errorName = error instanceof Error ? error.constructor.name : 'UnknownError'
+
+    console.error('[License] CRITICAL: Signature verification failed', {
+      error: errorMsg,
+      errorType: errorName,
+      hasSecret: !!process.env.LICENSE_SIGNING_SECRET,
+      hasPayload: !!payload,
+      hasSignature: !!signature,
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+
+    // Log actionable troubleshooting steps
+    if (!process.env.LICENSE_SIGNING_SECRET) {
+      console.error(
+        '\n⚠️  LICENSE_SIGNING_SECRET is not set!\n' +
+        '   This is required for license validation.\n' +
+        '   Set it in your .env file or environment variables.\n'
+      )
+    }
+
+    // Production should fail closed (reject invalid signatures)
+    // But we log WHY it failed for debugging
     return false
   }
 }
@@ -469,10 +491,37 @@ async function activateLicense(licenseKey, email) {
       }
     }
   } catch (error) {
-    // No insecure fallback on errors
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    const errorName = error instanceof Error ? error.constructor.name : 'UnknownError'
+
+    console.error('[License] Activation failed', {
+      error: errorMsg,
+      errorType: errorName,
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+
+    // Distinguish transient failures (can retry) from permanent failures (cannot retry)
+    const isTransientFailure =
+      errorMsg.includes('ECONNREFUSED') ||
+      errorMsg.includes('ETIMEDOUT') ||
+      errorMsg.includes('ENOTFOUND') ||
+      errorMsg.includes('network') ||
+      errorMsg.includes('timeout') ||
+      errorMsg.includes('fetch failed')
+
+    if (isTransientFailure) {
+      return {
+        success: false,
+        error: `License activation failed due to network error: ${errorMsg}. Please check your internet connection and try again.`,
+        retryable: true
+      }
+    }
+
+    // Permanent failure - don't suggest retry
     return {
       success: false,
-      error: `License activation failed: ${error.message}. Please contact support if the issue persists.`
+      error: `License activation failed: ${errorMsg}. Please verify your license key and email, or contact support.`,
+      retryable: false
     }
   }
 }

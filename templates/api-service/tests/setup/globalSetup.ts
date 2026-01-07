@@ -26,7 +26,7 @@ export default async function globalSetup() {
       throw new Error(
         `Integration tests already running (PID: ${lockPid}). Wait for completion or remove /tmp/api-service-test.lock`
       )
-    } catch (error) {
+    } catch {
       // Process doesn't exist, remove stale lock
       console.log(
         `🧹 Removing stale lock file (PID ${lockPid} no longer exists)`

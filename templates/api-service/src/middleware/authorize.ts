@@ -17,114 +17,94 @@ import { prisma } from '../lib/prisma'
 import { HttpStatus } from '../constants/http'
 import { errorResponses } from '../utils/responses'
 
-// Extend Express Request to include userId from auth middleware
 interface AuthenticatedRequest extends Request {
   userId?: number
   userRole?: Role
 }
 
-/**
- * Middleware to require exact role match
- */
+type RoleCheckResult =
+  | { success: true; role: Role }
+  | { success: false; response: Response }
+
+async function getUserRole(
+  req: Request,
+  res: Response
+): Promise<RoleCheckResult> {
+  const authReq = req as AuthenticatedRequest
+
+  if (!authReq.userId) {
+    return {
+      success: false,
+      response: errorResponses.unauthorized(res, 'Authentication required'),
+    }
+  }
+
+  if (authReq.userRole) {
+    return { success: true, role: authReq.userRole }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: authReq.userId },
+    select: { role: true },
+  })
+
+  if (!user) {
+    return {
+      success: false,
+      response: errorResponses.unauthorized(res, 'User not found'),
+    }
+  }
+
+  authReq.userRole = user.role
+  return { success: true, role: user.role }
+}
+
+function forbiddenResponse(res: Response, message: string): Response {
+  return res.status(HttpStatus.FORBIDDEN).json({
+    error: 'Insufficient permissions',
+    message,
+  })
+}
+
 export function requireRole(requiredRole: Role) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const authReq = req as AuthenticatedRequest
+    const result = await getUserRole(req, res)
+    if (!result.success) return result.response
 
-    if (!authReq.userId) {
-      return errorResponses.unauthorized(res, 'Authentication required')
-    }
-
-    // Fetch user role if not already in request
-    if (!authReq.userRole) {
-      const user = await prisma.user.findUnique({
-        where: { id: authReq.userId },
-        select: { role: true },
-      })
-
-      if (!user) {
-        return errorResponses.unauthorized(res, 'User not found')
-      }
-
-      authReq.userRole = user.role
-    }
-
-    if (!hasExactRole(requiredRole, authReq.userRole)) {
-      return res.status(HttpStatus.FORBIDDEN).json({
-        error: 'Insufficient permissions',
-        message: `This action requires ${requiredRole} role`,
-      })
+    if (!hasExactRole(requiredRole, result.role)) {
+      return forbiddenResponse(res, `This action requires ${requiredRole} role`)
     }
 
     return next()
   }
 }
 
-/**
- * Middleware to require minimum role level
- */
 export function requireMinimumRole(minimumRole: Role) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const authReq = req as AuthenticatedRequest
+    const result = await getUserRole(req, res)
+    if (!result.success) return result.response
 
-    if (!authReq.userId) {
-      return errorResponses.unauthorized(res, 'Authentication required')
-    }
-
-    // Fetch user role if not already in request
-    if (!authReq.userRole) {
-      const user = await prisma.user.findUnique({
-        where: { id: authReq.userId },
-        select: { role: true },
-      })
-
-      if (!user) {
-        return errorResponses.unauthorized(res, 'User not found')
-      }
-
-      authReq.userRole = user.role
-    }
-
-    if (!hasMinimumRole(minimumRole, authReq.userRole)) {
-      return res.status(HttpStatus.FORBIDDEN).json({
-        error: 'Insufficient permissions',
-        message: `This action requires at least ${minimumRole} role`,
-      })
+    if (!hasMinimumRole(minimumRole, result.role)) {
+      return forbiddenResponse(
+        res,
+        `This action requires at least ${minimumRole} role`
+      )
     }
 
     return next()
   }
 }
 
-/**
- * Middleware to require any of the specified roles
- */
 export function requireAnyRole(allowedRoles: Role[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const authReq = req as AuthenticatedRequest
+    const result = await getUserRole(req, res)
+    if (!result.success) return result.response
 
-    if (!authReq.userId) {
-      return errorResponses.unauthorized(res, 'Authentication required')
-    }
-
-    // Fetch user role if not already in request
-    if (!authReq.userRole) {
-      const user = await prisma.user.findUnique({
-        where: { id: authReq.userId },
-        select: { role: true },
-      })
-
-      if (!user) {
-        return errorResponses.unauthorized(res, 'User not found')
-      }
-
-      authReq.userRole = user.role
-    }
-
-    if (!hasAnyRole(allowedRoles, authReq.userRole)) {
-      return res.status(HttpStatus.FORBIDDEN).json({
-        error: 'Insufficient permissions',
-        message: `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
-      })
+    if (!hasAnyRole(allowedRoles, result.role)) {
+      return forbiddenResponse(
+        res,
+        `This action requires one of the following roles: ${allowedRoles.join(', ')}`
+      )
     }
 
     return next()

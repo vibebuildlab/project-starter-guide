@@ -82,12 +82,10 @@ export function can(user: RBACUser | null | undefined, permission: Permission): 
   if (!user) return false
 
   const userRole = user.role || ROLES.USER
-  // Find matching permission entry - permission param is typed so this is safe
   const permEntry = Object.entries(PERMISSIONS).find(([key]) => key === permission)
   if (!permEntry) return false
 
-  const allowedRoles = permEntry[1]
-  return (allowedRoles as readonly Role[]).includes(userRole)
+  return (permEntry[1] as readonly Role[]).includes(userRole)
 }
 
 /**

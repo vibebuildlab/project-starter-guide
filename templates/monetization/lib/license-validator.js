@@ -436,9 +436,47 @@ async function addLegitimateKey(
     if (fs.existsSync(legitimateDBFile)) {
       try {
         database = JSON.parse(fs.readFileSync(legitimateDBFile, 'utf8'))
-      } catch {
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error)
+        const errorName = error instanceof Error ? error.constructor.name : 'UnknownError'
+
+        console.error('[License] CRITICAL: License database is corrupted!', {
+          error: errorMsg,
+          errorType: errorName,
+          file: legitimateDBFile,
+          stack: error instanceof Error ? error.stack : undefined,
+        })
+
+        // Back up corrupted file before any operation
+        const backupFile = `${legitimateDBFile}.corrupted.${Date.now()}`
+        try {
+          fs.copyFileSync(legitimateDBFile, backupFile)
+          console.error(`   ✅ Backup saved to: ${backupFile}`)
+        } catch (backupError) {
+          const backupErrMsg = backupError instanceof Error ? backupError.message : String(backupError)
+          console.error(`   ❌ Failed to backup corrupted database: ${backupErrMsg}`)
+        }
+
         console.error(
-          'Warning: Could not parse existing database, creating new one'
+          '\n🚨 CRITICAL: License database corrupted - data loss risk!\n' +
+          `   Error: ${errorMsg} (${errorName})\n` +
+          `   File: ${legitimateDBFile}\n` +
+          '\n⚠️  Action Required (choose one):\n' +
+          `   1. Restore from backup: ${backupFile}\n` +
+          '   2. Manually fix JSON syntax in the backup file\n' +
+          '   3. Re-sync all licenses from Stripe webhook\n' +
+          '   4. Contact support for recovery assistance\n' +
+          '\n💡 Preventing this:\n' +
+          '   • Use atomic writes (write to temp file, then rename)\n' +
+          '   • Implement database backups before modifications\n' +
+          '   • Consider using a proper database instead of JSON files\n'
+        )
+
+        // Don't silently continue - this is a critical data loss event
+        // Throw error to prevent adding new license to corrupted database
+        throw new Error(
+          `License database corrupted: ${errorMsg}. ` +
+          `Backup saved to ${backupFile}. Manual recovery required.`
         )
       }
     }

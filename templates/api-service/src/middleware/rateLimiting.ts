@@ -78,8 +78,29 @@ function createRedisStore() {
   try {
     const client = createClient({ url: process.env.REDIS_URL })
     client.connect().catch((err: Error) => {
-      console.error('[RateLimit] Failed to connect to Redis:', err.message)
-      console.error('[RateLimit] Falling back to in-memory rate limiting')
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      const errorName = err instanceof Error ? err.constructor.name : 'UnknownError'
+
+      console.error('[RateLimit] CRITICAL: Failed to connect to Redis', {
+        error: errorMsg,
+        errorType: errorName,
+        redisUrl: process.env.REDIS_URL ? '***configured***' : 'missing',
+        stack: err instanceof Error ? err.stack : undefined,
+      })
+
+      // Alert operators immediately with actionable steps
+      console.error(
+        '\n🚨 CRITICAL: Redis connection failed\n' +
+        `   Error: ${errorMsg} (${errorName})\n` +
+        '   Impact: Falling back to in-memory rate limiting\n' +
+        '   ⚠️  WARNING: In-memory rate limiting does NOT work across multiple instances!\n' +
+        '   This means rate limits are per-instance, allowing bypass via load balancer.\n' +
+        '\n💡 Troubleshooting:\n' +
+        '   • Verify REDIS_URL is set and correct\n' +
+        '   • Check Redis server is running and accessible\n' +
+        '   • Verify network connectivity and firewall rules\n' +
+        '   • Check Redis authentication credentials\n'
+      )
     })
 
     const sendCommand: SendCommandFn = async (...args: string[]) => {
@@ -88,10 +109,18 @@ function createRedisStore() {
     }
     return new RedisStore({ sendCommand, prefix: 'rl:' })
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    const errorName = error instanceof Error ? error.constructor.name : 'UnknownError'
+
+    console.error('[RateLimit] CRITICAL: Failed to configure Redis rate limiting', {
+      error: errorMsg,
+      errorType: errorName,
+      redisUrl: process.env.REDIS_URL ? '***configured***' : 'missing',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     console.error(
-      '[RateLimit] Failed to configure Redis rate limiting. Falling back to in-memory store.'
+      '[RateLimit] Falling back to in-memory store. This is NOT safe for production multi-instance deployments!'
     )
-    console.error('[RateLimit] Error:', error)
     return undefined
   }
 }

@@ -10,7 +10,8 @@
 **Category**: Authentication - Critical
 **Codex Finding**: Database session users lose their id on every request after initial sign-in
 **Files**: `templates/saas-level-1/src/app/api/auth/[...nextauth]/route.ts:129-140`
-**Impact**: With `strategy: 'database'`, NextAuth calls session callback with `user` and `token` undefined on subsequent requests, causing `session.user.id = user?.id || token?.sub || ''` to overwrite Prisma-populated id with empty string
+**Impact**: With `strategy: 'database'`, NextAuth calls session callback with `user` and `token` undefined on subsequent requests, causing
+`session.user.id = user?.id || token?.sub || ''` to overwrite Prisma-populated id with empty string
 **Root Cause**: Unconditional assignment overwrites existing session.user.id from Prisma adapter
 **Resolution**: Implemented conditional assignment - only set id if not already populated
 
@@ -647,7 +648,8 @@ All P0 items from previous review completed ✅ (2025-11-11)
 **Files**: `templates/api-service/src/app.ts:28`
 **Impact**: Default Helmet CSP may not be optimal for API use cases
 **Root Cause**: Using helmet() without configuration options
-**Resolution**: Added explicit CSP directives (defaultSrc, scriptSrc, styleSrc, imgSrc, connectSrc, fontSrc, objectSrc, mediaSrc, frameSrc) with crossOriginEmbedderPolicy disabled for API use cases
+**Resolution**: Added explicit CSP directives (defaultSrc, scriptSrc, styleSrc, imgSrc, connectSrc, fontSrc, objectSrc, mediaSrc, frameSrc)
+with crossOriginEmbedderPolicy disabled for API use cases
 **Completed**: 2026-01-02
 **Commit**: 57809d5
 
@@ -900,9 +902,14 @@ npm run generate -- --defaults      # Non-interactive with defaults
 1. ✅ **TEST-005**: Add tests for /fetch endpoint (comprehensive test suite)
 2. ✅ **TYPE-001**: Add Role field to User model (enum + required field)
 
-**Production Scale Blockers** (P1) - ✅ ALL COMPLETE: 3. ✅ **REDIS-001**: Fail fast on missing Redis in production (startup validation) 4. ✅ **RATE-001**: Add per-user rate limiting to /fetch endpoint (100 req/hr per user)
+**Production Scale Blockers** (P1) - ✅ ALL COMPLETE:
+3. ✅ **REDIS-001**: Fail fast on missing Redis in production (startup validation)
+4. ✅ **RATE-001**: Add per-user rate limiting to /fetch endpoint (100 req/hr per user)
 
-**Strategic Improvements** (P2) - ✅ ALL COMPLETE: 5. ✅ **PERF-002**: Add DNS caching (50-200ms latency savings, 5min TTL) 6. ✅ **AUTH-008**: Add role hierarchy helpers (centralized utilities + middleware) 7. ✅ **UX-001**: Add specific error messages (structured error codes + helpful messages)
+**Strategic Improvements** (P2) - ✅ ALL COMPLETE:
+5. ✅ **PERF-002**: Add DNS caching (50-200ms latency savings, 5min TTL)
+6. ✅ **AUTH-008**: Add role hierarchy helpers (centralized utilities + middleware)
+7. ✅ **UX-001**: Add specific error messages (structured error codes + helpful messages)
 
 **Priority Actions - Codex Round 2 (2025-11-13 Morning)**:
 

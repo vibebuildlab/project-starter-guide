@@ -370,7 +370,28 @@ class StripeIntegration {
         this.webhookSecret,
       );
     } catch (error) {
-      console.error("Webhook signature verification failed:", error.message);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.constructor.name : 'UnknownError';
+
+      console.error("[Webhook] CRITICAL: Signature verification failed", {
+        error: errorMsg,
+        errorType: errorName,
+        hasSignature: !!signature,
+        hasWebhookSecret: !!this.webhookSecret,
+        signaturePrefix: signature ? signature.substring(0, 10) + '...' : 'none',
+      });
+
+      // Provide actionable debugging information
+      if (!signature) {
+        console.error("   Missing stripe-signature header - webhook not from Stripe");
+      } else if (!this.webhookSecret) {
+        console.error("   STRIPE_WEBHOOK_SECRET not configured - cannot verify webhooks");
+      } else if (errorMsg.includes('timestamp')) {
+        console.error("   Webhook timestamp issue - check server clock sync (tolerance: 5 minutes)");
+      } else if (errorMsg.includes('signature')) {
+        console.error("   Signature mismatch - verify STRIPE_WEBHOOK_SECRET matches Stripe Dashboard");
+      }
+
       return { success: false, error: "Invalid signature" };
     }
 
