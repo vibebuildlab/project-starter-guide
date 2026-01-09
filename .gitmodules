@@ -1,3 +1,0 @@
-[submodule ".claude-setup"]
-	path = .claude-setup
-	url = git@github.com:vibebuildlab/vibelab-claude-setup.git
