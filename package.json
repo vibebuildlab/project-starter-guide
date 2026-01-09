@@ -4,7 +4,7 @@
   "description": "Comprehensive guide for choosing the right architecture and technology stack for any project type",
   "private": true,
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=20",
     "npm": ">=10.0.0"
   },
   "scripts": {
@@ -21,7 +21,35 @@
     "format": "prettier --write '**/*.{js,json,md}'",
     "format:check": "prettier --check '**/*.{js,json,md}'",
     "preview:template": "cd templates/about-me-page && python3 -m http.server 8000",
-    "test:qa": "node tests/integration/qa-integration.test.mjs"
+    "test:qa": "node tests/integration/qa-integration.test.mjs",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "security:audit": "npm audit --audit-level high",
+    "security:secrets": "node -e \"const fs=require('fs');const content=fs.readFileSync('package.json','utf8');if(/[\\\"\\'][a-zA-Z0-9+/]{20,}[\\\"\\']/.test(content)){console.error('❌ Potential hardcoded secrets in package.json');process.exit(1)}else{console.log('✅ No secrets detected in package.json')}\"",
+    "security:config": "npx create-qa-architect@latest --security-config",
+    "lighthouse:ci": "lhci autorun",
+    "lighthouse:upload": "lhci upload",
+    "validate:docs": "npx create-qa-architect@latest --validate-docs",
+    "validate:comprehensive": "npx create-qa-architect@latest --comprehensive",
+    "validate:all": "npm run validate:comprehensive && npm run security:audit",
+    "validate:pre-push": "npm run test:patterns --if-present && npm run lint && npm run format:check && npm run test:commands --if-present && npm test --if-present",
+    "lint": "eslint . && stylelint \"templates/**/*.{css,scss,sass,less,pcss}\" --allow-empty-input",
+    "lint:fix": "eslint . --fix && stylelint \"templates/**/*.{css,scss,sass,less,pcss}\" --fix --allow-empty-input",
+    "type-check": "tsc --noEmit",
+    "type-check:tests": "tsc --noEmit --project tests/tsconfig.json",
+    "type-check:all": "npm run type-check && npm run type-check:tests",
+    "quality:check": "npm run type-check:all && npm run lint && npm run test",
+    "quality:ci": "npm run quality:check && npm run security:audit",
+    "prepare": "husky",
+    "test:fast": "vitest run --reporter=basic --coverage=false",
+    "test:medium": "vitest run --reporter=basic --testPathIgnorePatterns=e2e,integration",
+    "test:comprehensive": "vitest run && npm run lint && npm run format:check && npm run security:audit 2>/dev/null || true",
+    "test:smart": "bash scripts/smart-test-strategy.sh",
+    "size": "size-limit",
+    "size:why": "size-limit --why",
+    "test:a11y": "vitest run tests/accessibility.test.js",
+    "test:coverage:check": "vitest run --coverage --coverage.thresholds.lines=70 --coverage.thresholds.functions=70"
   },
   "keywords": [
     "web-development",
@@ -40,6 +68,45 @@
   "devDependencies": {
     "markdownlint-cli": "^0.47.0",
     "markdown-link-check": "^3.12.1",
-    "prettier": "^3.4.2"
+    "prettier": "^3.4.2",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.10",
+    "eslint": "^9.12.0",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "^15.9.0",
+    "stylelint": "^16.8.0",
+    "stylelint-config-standard": "^37.0.0",
+    "@lhci/cli": "^0.14.0",
+    "vitest": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8",
+    "size-limit": "^11.0.0",
+    "@size-limit/file": "^11.0.0",
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "axe-core": "^4.10.0"
+  },
+  "lint-staged": {
+    "package.json": [
+      "prettier --write"
+    ],
+    "**/*.{js,jsx,mjs,cjs,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "templates/**/*.{css,scss,sass,less,pcss}": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "**/*.{css,scss,sass,less,pcss}": [
+      "stylelint --fix",
+      "prettier --write"
+    ]
+  },
+  "volta": {
+    "node": "20.11.1",
+    "npm": "10.2.4"
   }
 }

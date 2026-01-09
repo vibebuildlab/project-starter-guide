@@ -1,0 +1,6 @@
+# Gitleaks ignore file
+# Add specific secrets that are false positives or test data
+# Format: <rule-id>:<file-path>:<line-number>:<commit-hash>
+
+# Example:
+# jwt-token:tests/fixtures/example.js:15:abc123def456

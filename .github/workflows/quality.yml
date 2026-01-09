@@ -1,0 +1,447 @@
+name: Quality Checks
+
+# Progressive quality automation - adapts checks based on project maturity
+# Minimal projects: Only Prettier
+# Bootstrap projects: + ESLint
+# Development projects: + Tests + Security
+# Production-ready: All checks enabled
+#
+# Note: Core checks and tests run on Node.js 20 and 22 matrix to catch runtime differences
+# and ensure compatibility across Node.js versions
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.editorconfig'
+  pull_request:
+    branches: [main, master, develop]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday (security scans)
+  workflow_dispatch:       # Manual trigger
+# WORKFLOW_MODE: minimal
+
+
+jobs:
+  # Step 1: Detect project maturity level and package manager
+  detect-maturity:
+    runs-on: ubuntu-latest
+    outputs:
+      maturity: ${{ steps.detect.outputs.maturity }}
+      source-count: ${{ steps.detect.outputs.source-count }}
+      test-count: ${{ steps.detect.outputs.test-count }}
+      has-deps: ${{ steps.detect.outputs.has-deps }}
+      has-docs: ${{ steps.detect.outputs.has-docs }}
+      has-css: ${{ steps.detect.outputs.has-css }}
+      package-manager: ${{ steps.detect-pm.outputs.manager }}
+      install-cmd: ${{ steps.detect-pm.outputs.install-cmd }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Detect Package Manager
+        id: detect-pm
+        run: |
+          # Detect package manager from lockfiles
+          if [ -f pnpm-lock.yaml ]; then
+            echo "manager=pnpm" >> $GITHUB_OUTPUT
+            echo "install-cmd=pnpm install --frozen-lockfile" >> $GITHUB_OUTPUT
+          elif [ -f yarn.lock ]; then
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+            echo "install-cmd=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
+          elif [ -f bun.lockb ]; then
+            echo "manager=bun" >> $GITHUB_OUTPUT
+            echo "install-cmd=bun install --frozen-lockfile" >> $GITHUB_OUTPUT
+          elif [ -f package-lock.json ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "install-cmd=npm ci" >> $GITHUB_OUTPUT
+          else
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "install-cmd=npm install" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect Project Maturity
+        id: detect
+        run: |
+          # Use the project maturity detector
+          node lib/project-maturity.js --github-actions >> $GITHUB_OUTPUT
+
+      - name: Display Detection Report
+        run: |
+          echo "📊 Project Detection Results"
+          echo "Package Manager: ${{ steps.detect-pm.outputs.manager }}"
+          echo "Install Command: ${{ steps.detect-pm.outputs.install-cmd }}"
+          echo "Maturity: ${{ steps.detect.outputs.maturity }}"
+          echo "Source files: ${{ steps.detect.outputs.source-count }}"
+          echo "Test files: ${{ steps.detect.outputs.test-count }}"
+          echo "Has dependencies: ${{ steps.detect.outputs.has-deps }}"
+          echo "Has documentation: ${{ steps.detect.outputs.has-docs }}"
+          echo "Has CSS files: ${{ steps.detect.outputs.has-css }}"
+
+  # Step 2: Core checks - ALWAYS run (all maturity levels)
+  core-checks:
+    runs-on: ubuntu-latest
+    needs: detect-maturity
+    strategy:
+      matrix:
+        node-version: [20, 22]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: ${{ needs.detect-maturity.outputs.package-manager }}
+
+      - name: Install dependencies
+        run: ${{ needs.detect-maturity.outputs.install-cmd }}
+
+      - name: Prettier check
+        run: |
+          echo "✨ Running Prettier formatting check (required for all projects)"
+          npm run format:check
+
+  # Step 3: Linting - run if source files exist (bootstrap+)
+  # Note: Runs on Node 20 only - linting tools are less sensitive to Node version differences
+  # Core runtime compatibility is tested via matrix in core-checks and tests jobs
+  linting:
+    runs-on: ubuntu-latest
+    needs: detect-maturity
+    if: fromJSON(needs.detect-maturity.outputs.source-count) > 0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: ${{ needs.detect-maturity.outputs.package-manager }}
+
+      - name: Install dependencies
+        run: ${{ needs.detect-maturity.outputs.install-cmd }}
+
+      - name: ESLint
+        run: |
+          echo "🔍 Linting ${{ needs.detect-maturity.outputs.source-count }} source files..."
+          npx eslint .
+
+      - name: Stylelint
+        if: needs.detect-maturity.outputs.has-css == 'true'
+        run: |
+          echo "🎨 Linting CSS files..."
+          npx stylelint "**/*.{css,scss,sass,less,pcss}" --allow-empty-input
+
+  # Step 4: Security checks - run if dependencies exist
+  #
+  # Optional Enhanced Token Configuration:
+  # - GITLEAKS_TOKEN: Enhanced GitHub token for gitleaks (fallback: GITHUB_TOKEN)
+  # - GITLEAKS_LICENSE: Commercial gitleaks license key for advanced features
+  # - SEMGREP_APP_TOKEN: Semgrep app token for enhanced scanning and rate limits
+  #
+  # These are optional - workflow functions with defaults but enhanced tokens
+  # provide better reliability on GHES/self-hosted and unlock premium features
+  security:
+    runs-on: ubuntu-latest
+    needs: detect-maturity
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && needs.detect-maturity.outputs.has-deps == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: ${{ needs.detect-maturity.outputs.package-manager }}
+
+      - name: Install dependencies
+        run: ${{ needs.detect-maturity.outputs.install-cmd }}
+
+      - name: Verify dependency integrity
+        run: |
+          echo "🔐 Verifying dependency integrity..."
+          PACKAGE_MANAGER="${{ needs.detect-maturity.outputs.package-manager }}"
+
+          case "$PACKAGE_MANAGER" in
+            "pnpm")
+              if [ -f pnpm-lock.yaml ]; then
+                pnpm install --frozen-lockfile --dry-run
+                echo "✅ Dependency integrity verified (pnpm)"
+              else
+                echo "⚠️ No pnpm-lock.yaml found - skipping integrity verification"
+              fi
+              ;;
+            "yarn")
+              if [ -f yarn.lock ]; then
+                yarn install --frozen-lockfile --dry-run
+                echo "✅ Dependency integrity verified (yarn)"
+              else
+                echo "⚠️ No yarn.lock found - skipping integrity verification"
+              fi
+              ;;
+            "bun")
+              if [ -f bun.lockb ]; then
+                bun install --frozen-lockfile --dry-run
+                echo "✅ Dependency integrity verified (bun)"
+              else
+                echo "⚠️ No bun.lockb found - skipping integrity verification"
+              fi
+              ;;
+            "npm"|*)
+              if [ -f package-lock.json ]; then
+                npm ci --dry-run --prefer-offline
+                echo "✅ Dependency integrity verified (npm)"
+              else
+                echo "⚠️ No package-lock.json found - skipping integrity verification"
+              fi
+              ;;
+          esac
+
+          echo "🔍 Checking for vulnerable dependencies..."
+          case "$PACKAGE_MANAGER" in
+            "pnpm") pnpm audit --audit-level=moderate ;;
+            "yarn") yarn audit --level=moderate ;;
+            "bun") bun audit --audit-level=moderate ;;
+            "npm"|*) npm audit --audit-level=moderate ;;
+          esac
+
+      - name: Security audit
+        run: |
+          PACKAGE_MANAGER="${{ needs.detect-maturity.outputs.package-manager }}"
+          echo "🔐 Running security audit with $PACKAGE_MANAGER..."
+
+          case "$PACKAGE_MANAGER" in
+            "pnpm") pnpm audit --audit-level high ;;
+            "yarn") yarn audit --level high ;;
+            "bun") bun audit --audit-level high ;;
+            "npm"|*) npm audit --audit-level high ;;
+          esac
+
+      - name: Production dependencies security audit
+        run: |
+          PACKAGE_MANAGER="${{ needs.detect-maturity.outputs.package-manager }}"
+          echo "🔒 Running production-only dependency audit with $PACKAGE_MANAGER..."
+
+          case "$PACKAGE_MANAGER" in
+            "pnpm") pnpm audit --audit-level high --prod ;;
+            "yarn") yarn audit --level high --groups dependencies ;;
+            "bun") bun audit --audit-level high --production ;;
+            "npm"|*) npm audit --audit-level high --production ;;
+          esac
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "🔍 Running gitleaks secret scanning..."
+          # Use setup.js security scan which manages gitleaks binary internally
+          # This avoids the commercial license requirement of the gitleaks-action
+          node setup.js --security-config
+
+      - name: Security pattern detection
+        uses: semgrep/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d # v1
+        with:
+          config: >
+            p/security-audit@1.85.0
+            p/javascript@1.85.0
+          cache: true
+          cache-key: semgrep-security-audit-1.85.0-javascript-1.85.0-${{ env.SEMGREP_VERSION }}
+        env:
+          # Use Semgrep app token if available for enhanced features and rate limits
+          # Falls back to GitHub token for basic functionality
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEMGREP_VERSION: '1.85.0'
+          SEMGREP_ENABLE_VERSION_CHECK: 'false'
+
+  # Step 5: Tests - run if test files exist (development+)
+  tests:
+    runs-on: ubuntu-latest
+    needs: detect-maturity
+    if: fromJSON(needs.detect-maturity.outputs.test-count) > 0    
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: ${{ needs.detect-maturity.outputs.package-manager }}
+
+      - name: Install dependencies
+        run: |
+          echo "⏱️ Performance Budget: Dependency installation must complete within 2 minutes"
+          timeout 120 ${{ needs.detect-maturity.outputs.install-cmd }} || {
+            echo "::error::Dependency installation exceeded 2-minute performance budget!"
+            exit 1
+          }
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running ${{ needs.detect-maturity.outputs.test-count }} test files on Node.js ${{ matrix.node-version }}..."
+
+          # Warn if test count is suspiciously low
+          TEST_COUNT=${{ needs.detect-maturity.outputs.test-count }}
+          if [ "$TEST_COUNT" -lt 5 ]; then
+            echo "::warning::Only $TEST_COUNT test file(s) found - consider adding more tests for better coverage"
+          fi
+
+          # Performance budget: Test suite timeout (5 minutes max)
+          echo "⏱️ Performance Budget: Test suite must complete within 5 minutes"
+          timeout 300 npm test || {
+            echo "::error::Test suite exceeded 5-minute performance budget!"
+            exit 1
+          }
+
+      - name: Cache gitleaks binary for real download test
+        if: runner.os == 'Linux'
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/create-qa-architect/gitleaks
+          key: gitleaks-8.28.0-linux-x64-a65b5253-${{ hashFiles('lib/validation/config-security.js') }}
+          restore-keys: |
+            gitleaks-8.28.0-linux-x64-a65b5253-
+            gitleaks-8.28.0-linux-x64-
+
+      - name: Run real gitleaks binary verification test
+        if: runner.os == 'Linux'
+        run: |
+          echo "🔐 Running real gitleaks binary verification test..."
+          QAA_DEVELOPER=true RUN_REAL_BINARY_TEST=1 node tests/gitleaks-real-binary-test.js
+
+  # Step 6: Documentation - run for production-ready projects
+  documentation:
+    runs-on: ubuntu-latest
+    needs: detect-maturity
+    if: needs.detect-maturity.outputs.maturity == 'production-ready'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: ${{ needs.detect-maturity.outputs.package-manager }}
+
+      - name: Install dependencies
+        run: ${{ needs.detect-maturity.outputs.install-cmd }}
+
+      - name: Configuration security check
+        run: |
+          echo "🔍 Running configuration security validation..."
+          node setup.js --security-config
+
+      - name: Documentation validation
+        run: |
+          echo "📖 Running documentation validation..."
+          node setup.js --validate-docs
+
+      - name: Documentation consistency and security audit freshness
+        run: |
+          echo "🔐 Running comprehensive documentation validation..."
+          # This includes security audit freshness check with proper git-based validation
+          bash scripts/check-docs.sh
+
+      - name: Package size and contents validation
+        if: hashFiles('package.json') != ''
+        run: |
+          echo "📦 Validating package size and contents..."
+
+          # Check if this is an npm package
+          if [ -f package.json ] && grep -q '"name"' package.json; then
+            # Dry-run pack to check what would be included
+            echo "🔍 Checking package contents (dry run):"
+            npm pack --dry-run 2>/dev/null | grep -E '^[a-zA-Z]' || echo "No files listed"
+
+            # Calculate estimated pack size
+            PACK_SIZE=$(npm pack --dry-run 2>&1 | grep -E 'package size.*[0-9]+' | grep -oE '[0-9.]+\s?(B|kB|MB)' | head -1 || echo "unknown")
+            echo "📊 Estimated package size: $PACK_SIZE"
+
+            # Warn if package seems too large (>10MB)
+            if echo "$PACK_SIZE" | grep -qE '[0-9]+\s?MB'; then
+              SIZE_NUM=$(echo "$PACK_SIZE" | grep -oE '[0-9]+')
+              if [ "$SIZE_NUM" -gt 10 ]; then
+                echo "::warning::Package size ($PACK_SIZE) is quite large. Consider excluding unnecessary files via .npmignore or package.json 'files' field."
+              fi
+            fi
+
+            # Check for common files that shouldn't be in packages
+            echo "🔍 Checking for potentially unwanted files..."
+            npm pack --dry-run 2>/dev/null | grep -E '\.(log|tmp|cache|DS_Store)$|node_modules/|\.git/' && {
+              echo "::warning::Package contains files that might not belong in the published package"
+            } || echo "✅ No obviously unwanted files detected"
+
+            # Validate package.json files field if present
+            if grep -q '"files"' package.json; then
+              echo "✅ Package.json 'files' field configured"
+            else
+              echo "::notice::No 'files' field in package.json - all files except those in .npmignore will be included"
+            fi
+          else
+            echo "ℹ️ Not an npm package or no package.json found - skipping package validation"
+          fi
+
+      - name: Lighthouse CI
+        if: hashFiles('.lighthouserc.js', '.lighthouserc.json', 'lighthouserc.js') != ''
+        run: |
+          echo "🚢 Running Lighthouse CI..."
+          npx lhci autorun
+        continue-on-error: true
+
+  # Step 7: Summary - report what checks ran
+  summary:
+    runs-on: ubuntu-latest
+    needs:
+      - detect-maturity
+      - core-checks
+      - linting
+      - security
+      - tests
+      - documentation
+    if: always()
+
+    steps:
+      - name: Generate Check Summary
+        run: |
+          echo "## Quality Checks Summary 📊" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Maturity Level:** ${{ needs.detect-maturity.outputs.maturity }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Project Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- Source files: ${{ needs.detect-maturity.outputs.source-count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Test files: ${{ needs.detect-maturity.outputs.test-count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Has dependencies: ${{ needs.detect-maturity.outputs.has-deps }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Has documentation: ${{ needs.detect-maturity.outputs.has-docs }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Checks Executed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Core checks: Always run" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ needs.detect-maturity.outputs.source-count > 0 && '✅' || '⏭️' }} Linting: ${{ needs.detect-maturity.outputs.source-count > 0 && 'Enabled' || 'Skipped (no source files)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ needs.detect-maturity.outputs.has-deps == 'true' && '✅' || '⏭️' }} Security: ${{ needs.detect-maturity.outputs.has-deps == 'true' && 'Enabled' || 'Skipped (no dependencies)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ needs.detect-maturity.outputs.test-count > 0 && '✅' || '⏭️' }} Tests: ${{ needs.detect-maturity.outputs.test-count > 0 && 'Enabled' || 'Skipped (no test files)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ${{ needs.detect-maturity.outputs.maturity == 'production-ready' && '✅' || '⏭️' }} Documentation: ${{ needs.detect-maturity.outputs.maturity == 'production-ready' && 'Enabled' || 'Skipped (not production-ready)' }}" >> $GITHUB_STEP_SUMMARY
+            # PR comment step not enabled (use --pr-comments to add)
+
+  # Slack alerts not enabled (use --alerts-slack to add)

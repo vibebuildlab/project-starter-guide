@@ -1,4 +1,33 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
 echo "🔍 Running smart pre-push validation..."
 
-# Call smart test strategy script
-bash scripts/smart-test-strategy.sh
+# Check if smart test strategy script exists
+if [ -f "scripts/smart-test-strategy.sh" ]; then
+  bash scripts/smart-test-strategy.sh
+else
+  # Fallback to basic validation
+  echo "📝 Linting..."
+  npm run lint || {
+    echo "❌ Lint failed! Fix errors before pushing."
+    exit 1
+  }
+
+  echo "✨ Checking formatting..."
+  npm run format:check || {
+    echo "❌ Format check failed! Run 'npm run format' to fix."
+    exit 1
+  }
+
+  # Run tests if they exist
+  if node -e "const pkg=require('./package.json');process.exit(pkg.scripts.test?0:1)" 2>/dev/null; then
+    echo "🧪 Running tests..."
+    npm test || {
+      echo "❌ Tests failed! Fix failing tests before pushing."
+      exit 1
+    }
+  fi
+
+  echo "✅ Pre-push validation passed!"
+fi
