@@ -74,7 +74,7 @@ jobs:
         id: detect
         run: |
           # Use the project maturity detector
-          node lib/project-maturity.js --github-actions >> $GITHUB_OUTPUT
+          node node_modules/create-qa-architect/lib/project-maturity.js --github-actions >> $GITHUB_OUTPUT
 
       - name: Display Detection Report
         run: |
