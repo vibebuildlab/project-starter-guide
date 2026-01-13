@@ -76,7 +76,7 @@
     "globals": "^15.9.0",
     "stylelint": "^16.8.0",
     "stylelint-config-standard": "^37.0.0",
-    "@lhci/cli": "^0.14.0",
+    "@lhci/cli": "^0.15.1",
     "vitest": "^2.1.8",
     "@vitest/coverage-v8": "^2.1.8",
     "size-limit": "^11.0.0",
