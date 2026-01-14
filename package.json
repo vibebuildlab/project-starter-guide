@@ -108,5 +108,15 @@
   "volta": {
     "node": "20.11.1",
     "npm": "10.2.4"
-  }
+  },
+  "size-limit": [
+    {
+      "path": "dist/**/*.js",
+      "limit": "250 kB"
+    },
+    {
+      "path": "dist/**/*.css",
+      "limit": "50 kB"
+    }
+  ]
 }
