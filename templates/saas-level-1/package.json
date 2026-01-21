@@ -42,7 +42,7 @@
     "next-auth": "^4.24.0",
     "nodemailer": "^7.0.10",
     "postcss": "^8.4.0",
-    "prisma": "^7.1.0",
+    "prisma": "^7.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",
